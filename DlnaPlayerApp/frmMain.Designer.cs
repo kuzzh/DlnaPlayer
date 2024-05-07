@@ -44,14 +44,16 @@
             this.tbLog = new System.Windows.Forms.TextBox();
             this.btnClearLog = new System.Windows.Forms.Button();
             this.btnRefreshPlaylist = new System.Windows.Forms.Button();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.contextMenuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // btnPlayToDevice
             // 
             this.btnPlayToDevice.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnPlayToDevice.Location = new System.Drawing.Point(455, 414);
+            this.btnPlayToDevice.Location = new System.Drawing.Point(457, 414);
             this.btnPlayToDevice.Name = "btnPlayToDevice";
             this.btnPlayToDevice.Size = new System.Drawing.Size(75, 23);
             this.btnPlayToDevice.TabIndex = 8;
@@ -66,7 +68,7 @@
             this.tbMediaDir.Location = new System.Drawing.Point(65, 11);
             this.tbMediaDir.Name = "tbMediaDir";
             this.tbMediaDir.ReadOnly = true;
-            this.tbMediaDir.Size = new System.Drawing.Size(490, 21);
+            this.tbMediaDir.Size = new System.Drawing.Size(492, 21);
             this.tbMediaDir.TabIndex = 6;
             // 
             // label1
@@ -81,7 +83,7 @@
             // btnSelectDir
             // 
             this.btnSelectDir.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnSelectDir.Location = new System.Drawing.Point(561, 11);
+            this.btnSelectDir.Location = new System.Drawing.Point(563, 11);
             this.btnSelectDir.Name = "btnSelectDir";
             this.btnSelectDir.Size = new System.Drawing.Size(96, 23);
             this.btnSelectDir.TabIndex = 2;
@@ -92,16 +94,14 @@
             // lvPlaylist
             // 
             this.lvPlaylist.Activation = System.Windows.Forms.ItemActivation.OneClick;
-            this.lvPlaylist.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.lvPlaylist.ContextMenuStrip = this.contextMenuStrip1;
+            this.lvPlaylist.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lvPlaylist.HideSelection = false;
-            this.lvPlaylist.Location = new System.Drawing.Point(9, 38);
+            this.lvPlaylist.Location = new System.Drawing.Point(6, 20);
             this.lvPlaylist.MultiSelect = false;
             this.lvPlaylist.Name = "lvPlaylist";
             this.lvPlaylist.ShowItemToolTips = true;
-            this.lvPlaylist.Size = new System.Drawing.Size(729, 370);
+            this.lvPlaylist.Size = new System.Drawing.Size(717, 344);
             this.lvPlaylist.TabIndex = 1;
             this.lvPlaylist.UseCompatibleStateImageBehavior = false;
             this.lvPlaylist.View = System.Windows.Forms.View.List;
@@ -124,7 +124,7 @@
             // btnDiscoverDevices
             // 
             this.btnDiscoverDevices.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnDiscoverDevices.Location = new System.Drawing.Point(663, 414);
+            this.btnDiscoverDevices.Location = new System.Drawing.Point(665, 414);
             this.btnDiscoverDevices.Name = "btnDiscoverDevices";
             this.btnDiscoverDevices.Size = new System.Drawing.Size(75, 23);
             this.btnDiscoverDevices.TabIndex = 1;
@@ -138,7 +138,7 @@
             this.lblCurrentMediaInfo});
             this.statusStrip1.Location = new System.Drawing.Point(0, 656);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(744, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(746, 22);
             this.statusStrip1.TabIndex = 1;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -152,7 +152,7 @@
             this.cbCurrentDevice.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cbCurrentDevice.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cbCurrentDevice.FormattingEnabled = true;
-            this.cbCurrentDevice.Location = new System.Drawing.Point(536, 414);
+            this.cbCurrentDevice.Location = new System.Drawing.Point(538, 414);
             this.cbCurrentDevice.Name = "cbCurrentDevice";
             this.cbCurrentDevice.Size = new System.Drawing.Size(121, 20);
             this.cbCurrentDevice.TabIndex = 10;
@@ -167,7 +167,7 @@
             this.tbLog.Name = "tbLog";
             this.tbLog.ReadOnly = true;
             this.tbLog.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.tbLog.Size = new System.Drawing.Size(729, 209);
+            this.tbLog.Size = new System.Drawing.Size(731, 209);
             this.tbLog.TabIndex = 11;
             this.tbLog.WordWrap = false;
             // 
@@ -185,7 +185,7 @@
             // btnRefreshPlaylist
             // 
             this.btnRefreshPlaylist.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnRefreshPlaylist.Location = new System.Drawing.Point(663, 11);
+            this.btnRefreshPlaylist.Location = new System.Drawing.Point(665, 11);
             this.btnRefreshPlaylist.Name = "btnRefreshPlaylist";
             this.btnRefreshPlaylist.Size = new System.Drawing.Size(75, 23);
             this.btnRefreshPlaylist.TabIndex = 13;
@@ -193,13 +193,27 @@
             this.btnRefreshPlaylist.UseVisualStyleBackColor = true;
             this.btnRefreshPlaylist.Click += new System.EventHandler(this.btnRefreshPlaylist_Click);
             // 
+            // groupBox1
+            // 
+            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Controls.Add(this.lvPlaylist);
+            this.groupBox1.Location = new System.Drawing.Point(9, 38);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Padding = new System.Windows.Forms.Padding(6);
+            this.groupBox1.Size = new System.Drawing.Size(729, 370);
+            this.groupBox1.TabIndex = 14;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "播放列表";
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(744, 678);
+            this.ClientSize = new System.Drawing.Size(746, 678);
+            this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.btnRefreshPlaylist);
-            this.Controls.Add(this.lvPlaylist);
             this.Controls.Add(this.btnClearLog);
             this.Controls.Add(this.tbLog);
             this.Controls.Add(this.cbCurrentDevice);
@@ -217,6 +231,7 @@
             this.contextMenuStrip1.ResumeLayout(false);
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
+            this.groupBox1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -237,6 +252,7 @@
         private System.Windows.Forms.TextBox tbLog;
         private System.Windows.Forms.Button btnClearLog;
         private System.Windows.Forms.Button btnRefreshPlaylist;
+        private System.Windows.Forms.GroupBox groupBox1;
     }
 }
 
