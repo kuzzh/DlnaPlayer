@@ -206,7 +206,7 @@ namespace DlnaLib
 
                             logger.Debug(resonseText);
 
-                            logger.Info("Video URL sent successfully to DLNA device.");
+                            logger.Info("媒体文件已发送至设备");
                         }
                     }
                 }
