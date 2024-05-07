@@ -92,6 +92,11 @@ namespace DlnaPlayerApp
 
 		private void OnPlayNext(object sender, EventArgs e)
 		{
+			if (InvokeRequired)
+			{
+				BeginInvoke(new Action(()=>OnPlayNext(sender, e)));
+				return;
+			}
 			if(lvPlaylist.Items.Count <= 0)
 			{
 				logger.Warn("播放媒体文件失败，播放列表为空");
@@ -117,6 +122,8 @@ namespace DlnaPlayerApp
 			playItem.Selected = true;
 			playItem.Focused = true;
 			lvPlaylist.Select();
+
+			ResetListViewItemForeColor();
 		}
 
 		private void OnPlayMediaInfo(object sender, PlayMediaInfoEventArgs e)
@@ -126,7 +133,7 @@ namespace DlnaPlayerApp
 				BeginInvoke(new Action(() => OnPlayMediaInfo(sender, e)));
 				return;
 			}
-			ResetListViewItemForeColor();
+			//ResetListViewItemForeColor();
 
 			if (e.CurrentMediaInfo == null)
 			{
@@ -165,7 +172,10 @@ namespace DlnaPlayerApp
 		{
 			foreach (ListViewItem item in lvPlaylist.Items)
 			{
-				item.ForeColor = Color.Black;
+				if (item.ForeColor != Color.Black)
+				{
+					item.ForeColor = Color.Black;
+				}
 			}
 		}
 
