@@ -24,6 +24,8 @@ namespace DlnaLib
 
         private Timer _playStateQueryTimer;
 
+        private EnumTransportState _lastState = EnumTransportState.NO_MEDIA_PRESENT;
+
         public event EventHandler<DeviceFoundEventArgs> DeviceFound;
         public event EventHandler<EventArgs> DiscoverFinished;
         public event EventHandler<EventArgs> PlayNext;
@@ -61,10 +63,16 @@ namespace DlnaLib
                 if (CurrentDevice.SupportGetTransportInfo)
                 {
                     var transportInfo = GetTransportInfo(CurrentDevice.ControlUrl);
-                    if (transportInfo != null && transportInfo.CurrentTransportState == EnumTransportState.STOPPED)
+                    if (transportInfo != null)
                     {
-                        PlayNext?.Invoke(this, new EventArgs());
+                        if (transportInfo.CurrentTransportState == EnumTransportState.STOPPED && _lastState == EnumTransportState.PLAYING)
+                        {
+                            PlayNext?.Invoke(this, new EventArgs());
+                        }
+
+                        _lastState = transportInfo.CurrentTransportState;
                     }
+                    
                 }
             }
             catch (Exception ex)

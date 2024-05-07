@@ -52,7 +52,7 @@ namespace DlnaPlayerApp
 				foreach (var file in Directory.EnumerateFiles(mediaDir, "*.*", SearchOption.AllDirectories))
 				{
 					var ext = $"*{Path.GetExtension(file)}";
-					if (SupporetdVideoFormats.Contains(ext) || SupportedAudioFormats.Contains(ext))
+					if (SupporetdVideoFormats.Contains(ext))
 					{
 						var name = $"{index++}. {Path.GetFileNameWithoutExtension(file)}";
 						var item = new ListViewItem(name)

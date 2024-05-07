@@ -11,6 +11,8 @@ namespace DlnaPlayerApp
 {
     internal class AppHelper
     {
+        private static Dictionary<string, string> _localIPv4s = new Dictionary<string, string>();
+
         public static List<IPAddress> GetLocalIPv4Addresses(string baseUrl)
         {
             var localIPs = new List<IPAddress>();
@@ -41,28 +43,21 @@ namespace DlnaPlayerApp
 
         public static string BuildMediaUrl(string filePath, string baseUrl)
         {
-            var localAddresses = GetLocalIPv4Addresses(baseUrl);
-            if (localAddresses.Count <= 0)
+            if (!_localIPv4s.TryGetValue(baseUrl, out string hostIp))
             {
-                return string.Empty;
+                var localAddresses = GetLocalIPv4Addresses(baseUrl);
+                if (localAddresses.Count <= 0)
+                {
+                    return string.Empty;
+                }
+                hostIp = localAddresses.First().ToString();
+
+                _localIPv4s[baseUrl] = hostIp;
             }
-            var hostIp = localAddresses.First();
+            
             var relFilePath = GetRelativePath(AppConfig.Instance.MediaDir, filePath);
 
             return $"http://{hostIp}:{AppConfig.Instance.HttpPort}/{HttpUtility.UrlEncode(relFilePath)}";
-        }
-
-        public static string BuildPlaylistUrl(string playlistFilePath, string baseUrl)
-        {
-            var localAddresses = GetLocalIPv4Addresses(baseUrl);
-            if (localAddresses.Count <= 0)
-            {
-                return string.Empty;
-            }
-            var hostIp = localAddresses.First();
-            var filePath = GetRelativePath(AppConfig.Instance.MediaDir, playlistFilePath);
-
-            return $"http://{hostIp}:{AppConfig.Instance.HttpPort}/{HttpUtility.UrlEncode(filePath)}";
         }
 
         public static string GetRelativePath(string basePath, string targetPath)
