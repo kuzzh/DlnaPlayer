@@ -72,7 +72,7 @@ namespace DlnaLib
 
                         _lastState = transportInfo.CurrentTransportState;
                     }
-                    
+
                 }
             }
             catch (Exception ex)
@@ -201,27 +201,34 @@ namespace DlnaLib
                 }
 
                 // 获取响应
-                using (var response = (HttpWebResponse)request.GetResponse())
-                {
-                    using (var responseStream = response.GetResponseStream())
-                    {
-                        using (var memoryStream = new MemoryStream())
-                        {
-                            responseStream.CopyTo(memoryStream);
+                var responseText = GetResponseText(request);
 
-                            var responseBytes = memoryStream.ToArray();
-                            var resonseText = Encoding.UTF8.GetString(responseBytes);
+                logger.Debug(responseText);
 
-                            logger.Debug(resonseText);
-
-                            logger.Info("媒体文件已发送至设备");
-                        }
-                    }
-                }
+                logger.Info("媒体文件已发送至设备");
             }
             catch (Exception ex)
             {
                 logger.Error($"{nameof(SendVideoToDLNA)} - {ex.Message}");
+            }
+        }
+
+        private static string GetResponseText(HttpWebRequest request)
+        {
+            using (var response = (HttpWebResponse)request.GetResponse())
+            {
+                using (var responseStream = response.GetResponseStream())
+                {
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        responseStream.CopyTo(memoryStream);
+
+                        var responseBytes = memoryStream.ToArray();
+                        var responseText = Encoding.UTF8.GetString(responseBytes);
+
+                        return responseText;
+                    }
+                }
             }
         }
 
@@ -474,18 +481,23 @@ namespace DlnaLib
             }
         }
 
-        public void PausePlayback(string controlUrl)
+        public void PausePlayback()
         {
             try
             {
+                if (CurrentDevice == null)
+                {
+                    logger.Error("暂停播放失败：未选择设备");
+                    return;
+                }
                 // 创建HTTP请求
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(controlUrl);
+                var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
                 request.ContentType = "text/xml; charset=\"utf-8\"";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#Pause\"");
 
                 // 发送控制命令
-                string body = @"<?xml version=""1.0""?>
+                var body = @"<?xml version=""1.0""?>
                             <s:Envelope xmlns:s=""http://schemas.xmlsoap.org/soap/envelope/"" s:encodingStyle=""http://schemas.xmlsoap.org/soap/encoding/"">
                                 <s:Body>
                                     <u:Pause xmlns:u=""urn:schemas-upnp-org:service:AVTransport:1"">
@@ -494,7 +506,7 @@ namespace DlnaLib
                                 </s:Body>
                             </s:Envelope>";
 
-                byte[] byteBody = Encoding.UTF8.GetBytes(body);
+                var byteBody = Encoding.UTF8.GetBytes(body);
                 request.ContentLength = byteBody.Length;
 
                 using (var stream = request.GetRequestStream())
@@ -503,27 +515,38 @@ namespace DlnaLib
                 }
 
                 // 获取响应
-                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-                Console.WriteLine("Playback paused successfully.");
+                var response = (HttpWebResponse)request.GetResponse();
+
+                // 获取响应
+                var responseText = GetResponseText(request);
+
+                logger.Debug(responseText);
+
+                logger.Info("已暂停播放");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error pausing playback: " + ex.Message);
+                logger.Error($"{nameof(PausePlayback)} - {ex.Message}");
             }
         }
 
-        public void ResumePlayback(string controlUrl)
+        public void ResumePlayback()
         {
             try
             {
+                if (CurrentDevice == null)
+                {
+                    logger.Error("恢复播放失败：未选择设备");
+                    return;
+                }
                 // 创建HTTP请求
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(controlUrl);
+                var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
                 request.ContentType = "text/xml; charset=\"utf-8\"";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#Play\"");
 
                 // 发送控制命令
-                string body = @"<?xml version=""1.0""?>
+                var body = @"<?xml version=""1.0""?>
                             <s:Envelope xmlns:s=""http://schemas.xmlsoap.org/soap/envelope/"" s:encodingStyle=""http://schemas.xmlsoap.org/soap/encoding/"">
                                 <s:Body>
                                     <u:Play xmlns:u=""urn:schemas-upnp-org:service:AVTransport:1"">
@@ -533,7 +556,7 @@ namespace DlnaLib
                                 </s:Body>
                             </s:Envelope>";
 
-                byte[] byteBody = Encoding.UTF8.GetBytes(body);
+                var byteBody = Encoding.UTF8.GetBytes(body);
                 request.ContentLength = byteBody.Length;
 
                 using (var stream = request.GetRequestStream())
@@ -542,12 +565,18 @@ namespace DlnaLib
                 }
 
                 // 获取响应
-                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-                Console.WriteLine("Playback resumed successfully.");
+                var response = (HttpWebResponse)request.GetResponse();
+
+                // 获取响应
+                var responseText = GetResponseText(request);
+
+                logger.Debug(responseText);
+
+                logger.Info("已恢复播放");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error resuming playback: " + ex.Message);
+                logger.Error($"{nameof(ResumePlayback)} - {ex.Message}");
             }
         }
 

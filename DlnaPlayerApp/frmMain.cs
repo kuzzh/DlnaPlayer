@@ -3,7 +3,9 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
+using WaitWnd;
 
 namespace DlnaPlayerApp
 {
@@ -25,6 +27,8 @@ namespace DlnaPlayerApp
         };
         private int _currentPlayIndex = -1;
 
+        private WaitWndFun _waitForm = new WaitWndFun();
+
         private ListViewItem SelectedItem
         {
             get
@@ -44,6 +48,16 @@ namespace DlnaPlayerApp
             InitLogAppender();
 
             SetListViewItemHeight(20);
+
+            // 为了使lblCurrentMediaInfo文字过长时也显示并且在末尾添加省略号
+            lblCurrentMediaInfo.Spring = true;
+            statusStrip1.Renderer = new StatusStripRenderer();
+
+            if (!string.IsNullOrEmpty(AppConfig.Instance.LastPlayedFile) &&
+                !string.IsNullOrEmpty(AppConfig.Instance.LastPlayedDevice))
+            {
+                lblCurrentMediaInfo.Text = $"上次播放：{AppConfig.Instance.LastPlayedFile} 播放设备：{AppConfig.Instance.LastPlayedDevice}";
+            }
 
             _dlnaManager.DeviceFound += OnDeviceFound;
             _dlnaManager.DiscoverFinished += OnDiscoverFinished;
@@ -73,7 +87,7 @@ namespace DlnaPlayerApp
         {
             _dlnaDevices.Clear();
             cbCurrentDevice.Items.Clear();
-            lblCurrentMediaInfo.Text = "";
+            //lblCurrentMediaInfo.Text = "";
             btnDiscoverDevices.Enabled = false;
 
             _dlnaManager.DiscoverDLNADevices();
@@ -81,10 +95,10 @@ namespace DlnaPlayerApp
 
         private void cbCurrentDevice_SelectedIndexChanged(object sender, EventArgs e)
         {
-            lblCurrentMediaInfo.Text = "";
+            //lblCurrentMediaInfo.Text = "";
             _dlnaManager.CurrentDevice = (DlnaDevice)cbCurrentDevice.SelectedItem;
         }
-        
+
         private void btnSelectDir_Click(object sender, EventArgs e)
         {
             using (var dlg = new FolderBrowserDialog())
@@ -123,28 +137,40 @@ namespace DlnaPlayerApp
 
         private void btnPlayToDevice_Click(object sender, EventArgs e)
         {
-            if (lvPlaylist.Items.Count <= 0)
+            _waitForm.Show(this);
+            try
             {
-                logger.Warn("播放媒体文件失败，播放列表为空");
-                return;
-            }
+                if (lvPlaylist.Items.Count <= 0)
+                {
+                    logger.Warn("播放媒体文件失败，播放列表为空");
+                    return;
+                }
 
-            if (_dlnaManager.CurrentDevice == null)
-            {
-                logger.Warn("播放媒体文件失败，未选择播放设备");
-                return;
-            }
+                if (_dlnaManager.CurrentDevice == null)
+                {
+                    logger.Warn("播放媒体文件失败，未选择播放设备");
+                    return;
+                }
 
-            if (SelectedItem != null)
-            {
-                _currentPlayIndex = SelectedItem.Index - 1;
-            }
-            else
-            {
-                _currentPlayIndex = -1;
-            }
+                if (SelectedItem != null)
+                {
+                    _currentPlayIndex = SelectedItem.Index - 1;
+                }
+                else
+                {
+                    _currentPlayIndex = -1;
+                }
 
-            OnPlayNext(sender, EventArgs.Empty);
+                OnPlayNext(sender, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"播放失败：{ex.Message}");
+            }
+            finally
+            {
+                _waitForm.Close();
+            }
         }
 
         private void btnClearLog_Click(object sender, EventArgs e)
@@ -170,6 +196,20 @@ namespace DlnaPlayerApp
         private void btnRefreshPlaylist_Click(object sender, EventArgs e)
         {
             LoadPlaylist(AppConfig.Instance.MediaDir, false);
+        }
+
+        private void btnResume_Click(object sender, EventArgs e)
+        {
+            _waitForm.Show(this);
+            _dlnaManager.ResumePlayback();
+            _waitForm.Close();
+        }
+
+        private void btnPause_Click(object sender, EventArgs e)
+        {
+            _waitForm.Show(this);
+            _dlnaManager.PausePlayback();
+            _waitForm.Close();
         }
     }
 }

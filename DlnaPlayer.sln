@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DlnaPlayerApp", "DlnaPlayer
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DlnaLib", "DlnaLib\DlnaLib.csproj", "{4D8E7C92-8E2D-4D1D-9715-685A411E211F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaitWnd", "WaitWnd\WaitWnd.csproj", "{A36149B7-3811-451B-9097-74A66D255A5B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{4D8E7C92-8E2D-4D1D-9715-685A411E211F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4D8E7C92-8E2D-4D1D-9715-685A411E211F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4D8E7C92-8E2D-4D1D-9715-685A411E211F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A36149B7-3811-451B-9097-74A66D255A5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A36149B7-3811-451B-9097-74A66D255A5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A36149B7-3811-451B-9097-74A66D255A5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A36149B7-3811-451B-9097-74A66D255A5B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

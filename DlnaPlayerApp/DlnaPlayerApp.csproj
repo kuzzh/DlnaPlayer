@@ -67,6 +67,7 @@
     <Compile Include="PathUtils.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StatusStripRenderer.cs" />
     <EmbeddedResource Include="frmMain.resx">
       <DependentUpon>frmMain.cs</DependentUpon>
     </EmbeddedResource>
@@ -104,6 +105,10 @@
     <ProjectReference Include="..\DlnaLib\DlnaLib.csproj">
       <Project>{4d8e7c92-8e2d-4d1d-9715-685a411e211f}</Project>
       <Name>DlnaLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\WaitWnd\WaitWnd.csproj">
+      <Project>{a36149b7-3811-451b-9097-74a66d255a5b}</Project>
+      <Name>WaitWnd</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

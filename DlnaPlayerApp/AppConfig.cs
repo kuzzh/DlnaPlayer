@@ -6,6 +6,8 @@ namespace DlnaPlayerApp
     {
         public string MediaDir { get; set; }
         public int HttpPort { get; set; } = 1573;
+        public string LastPlayedFile { get; set; }
+        public string LastPlayedDevice { get; set; }
 
         private static AppConfig instance;
         public static AppConfig Instance
@@ -28,6 +30,8 @@ namespace DlnaPlayerApp
             {
                 HttpPort = port;
             }
+            LastPlayedFile = ConfigurationManager.AppSettings[nameof(LastPlayedFile)];
+            LastPlayedDevice = ConfigurationManager.AppSettings[nameof(LastPlayedDevice)];
         }
 
         public void SaveConfig()
@@ -38,6 +42,8 @@ namespace DlnaPlayerApp
             // 修改键值对
             ModifyValue(config, nameof(MediaDir), MediaDir);
             ModifyValue(config, nameof(HttpPort), HttpPort.ToString());
+            ModifyValue(config, nameof(LastPlayedFile), LastPlayedFile);
+            ModifyValue(config, nameof(LastPlayedDevice), LastPlayedDevice);
 
             // 保存配置更改
             config.Save(ConfigurationSaveMode.Modified);

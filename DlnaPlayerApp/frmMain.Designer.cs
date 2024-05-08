@@ -45,6 +45,8 @@
             this.btnClearLog = new System.Windows.Forms.Button();
             this.btnRefreshPlaylist = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.btnResume = new System.Windows.Forms.Button();
+            this.btnPause = new System.Windows.Forms.Button();
             this.contextMenuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -146,6 +148,7 @@
             // 
             this.lblCurrentMediaInfo.Name = "lblCurrentMediaInfo";
             this.lblCurrentMediaInfo.Size = new System.Drawing.Size(0, 17);
+            this.lblCurrentMediaInfo.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // cbCurrentDevice
             // 
@@ -207,11 +210,35 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "播放列表";
             // 
+            // btnResume
+            // 
+            this.btnResume.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnResume.Location = new System.Drawing.Point(376, 414);
+            this.btnResume.Name = "btnResume";
+            this.btnResume.Size = new System.Drawing.Size(75, 23);
+            this.btnResume.TabIndex = 15;
+            this.btnResume.Text = "继续播放";
+            this.btnResume.UseVisualStyleBackColor = true;
+            this.btnResume.Click += new System.EventHandler(this.btnResume_Click);
+            // 
+            // btnPause
+            // 
+            this.btnPause.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnPause.Location = new System.Drawing.Point(295, 415);
+            this.btnPause.Name = "btnPause";
+            this.btnPause.Size = new System.Drawing.Size(75, 23);
+            this.btnPause.TabIndex = 16;
+            this.btnPause.Text = "暂停播放";
+            this.btnPause.UseVisualStyleBackColor = true;
+            this.btnPause.Click += new System.EventHandler(this.btnPause_Click);
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(746, 678);
+            this.Controls.Add(this.btnPause);
+            this.Controls.Add(this.btnResume);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.btnRefreshPlaylist);
             this.Controls.Add(this.btnClearLog);
@@ -253,6 +280,8 @@
         private System.Windows.Forms.Button btnClearLog;
         private System.Windows.Forms.Button btnRefreshPlaylist;
         private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.Button btnResume;
+        private System.Windows.Forms.Button btnPause;
     }
 }
 
