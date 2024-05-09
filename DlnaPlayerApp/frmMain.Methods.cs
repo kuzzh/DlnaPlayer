@@ -42,7 +42,7 @@ namespace DlnaPlayerApp
         {
             if (string.IsNullOrEmpty(mediaDir) || !Directory.Exists(mediaDir))
             {
-                logger.Warn("加载播放列表失败：媒体目录不存在");
+                LogUtils.Warn(logger, "加载播放列表失败：媒体目录不存在");
                 return;
             }
 
@@ -86,12 +86,12 @@ namespace DlnaPlayerApp
                     var index = 1;
                     foreach (var item in items)
                     {
-                        item.Name = $"{index++}. {item.Name}";
+                        item.Text = $"{index++}. {item.Text}";
                     }
 
                     lvPlaylist.Items.AddRange(items);
 
-                    logger.Info($"播放列表加载完成，共加载 {listViewItems.Count} 个媒体文件");
+                    LogUtils.Info(logger, $"播放列表加载完成，共加载 {listViewItems.Count} 个媒体文件");
                 }));
             });
         }
@@ -104,66 +104,66 @@ namespace DlnaPlayerApp
                 BeginInvoke(new Action(() => OnPlayNext(sender, e)));
                 return;
             }
-            _waitForm.Show(this);
-            try
+            _currentPlayIndex++;
+
+            if (_currentPlayIndex >= lvPlaylist.Items.Count)
+            {
+                _currentPlayIndex = 0;
+            }
+            var playItem = lvPlaylist.Items[_currentPlayIndex];
+
+            _waitForm.Show(this, () =>
             {
                 if (lvPlaylist.Items.Count <= 0)
                 {
-                    logger.Warn("播放媒体文件失败，播放列表为空");
+                    LogUtils.Warn(logger, "播放媒体文件失败，播放列表为空");
                     return;
                 }
                 if (_dlnaManager.CurrentDevice == null)
                 {
-                    logger.Warn("播放媒体文件失败，未选择播放设备");
+                    LogUtils.Warn(logger, "播放媒体文件失败，未选择播放设备");
                     return;
                 }
-                _currentPlayIndex++;
-
-                if (_currentPlayIndex >= lvPlaylist.Items.Count)
-                {
-                    _currentPlayIndex = 0;
-                }
-
-                var playItem = lvPlaylist.Items[_currentPlayIndex];
 
                 var nextFileUrl = AppHelper.BuildMediaUrl(playItem.Tag.ToString(), _dlnaManager.CurrentDevice.BaseUrl);
                 _dlnaManager.SendVideoToDLNA(nextFileUrl);
+                _dlnaManager.CurrentDevice.ExpectState = EnumTransportState.PLAYING;
 
-                playItem.Selected = true;
-                playItem.Focused = true;
-                lvPlaylist.Select();
+                BeginInvoke(new Action(() =>
+                {
+                    playItem.Selected = true;
+                    playItem.Focused = true;
+                    lvPlaylist.Select();
 
-                ResetListViewItemForeColor();
+                    ResetListViewItemForeColor();
+                }));
 
                 AppConfig.Instance.LastPlayedDevice = _dlnaManager.CurrentDevice.DeviceName;
                 AppConfig.Instance.LastPlayedFile = playItem.Tag.ToString();
                 AppConfig.Instance.SaveConfig();
-            }
-            finally
-            {
-                _waitForm.Close();
-            }
+            });
         }
 
-        private void OnPlayMediaInfo(object sender, PlayMediaInfoEventArgs e)
+        private void OnPlayPositionInfo(object sender, PlayPositionInfoEventArgs e)
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new Action(() => OnPlayMediaInfo(sender, e)));
+                BeginInvoke(new Action(() => OnPlayPositionInfo(sender, e)));
                 return;
             }
 
-            if (e.CurrentMediaInfo == null)
+            if (e.TransportInfo == null || e.PositionInfo == null)
             {
                 lblCurrentMediaInfo.Text = $"设备[{e.CurrentDevice.DeviceName}]播放状态：未知";
                 return;
             }
-            var listViewItem = FindListViewItem(e.CurrentMediaInfo.CurrentURI);
+            ResetListViewItemForeColor();
+            var listViewItem = FindListViewItem(e.PositionInfo.TrackURI);
             if (listViewItem != null)
             {
                 listViewItem.ForeColor = Color.Red;
             }
-            lblCurrentMediaInfo.Text = $"设备[{e.CurrentDevice.DeviceName}]正在播放[{Path.GetFileName(HttpUtility.UrlDecode(e.CurrentMediaInfo.CurrentURI))}]";
+            lblCurrentMediaInfo.Text = $"播放设备：{e.CurrentDevice.DeviceName} 正在播放：{Path.GetFileName(HttpUtility.UrlDecode(e.PositionInfo.TrackURI))} {e.PositionInfo.RelTime}/{e.PositionInfo.TrackDuration}";
         }
 
         private ListViewItem FindListViewItem(string videoUrl)
@@ -207,7 +207,7 @@ namespace DlnaPlayerApp
                 BeginInvoke((MethodInvoker)delegate { OnDeviceFound(sender, e); });
                 return;
             }
-            logger.Debug($"{e.DlnaDevice.DeviceName} - {e.DlnaDevice.DeviceLocation}");
+            LogUtils.Debug(logger, $"{e.DlnaDevice.DeviceName} - {e.DlnaDevice.DeviceLocation}");
             if (!_dlnaDevices.Contains(e.DlnaDevice))
             {
                 cbCurrentDevice.Items.Add(e.DlnaDevice);

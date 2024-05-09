@@ -2,6 +2,7 @@
 using log4net;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -56,12 +57,12 @@ namespace DlnaPlayerApp
             if (!string.IsNullOrEmpty(AppConfig.Instance.LastPlayedFile) &&
                 !string.IsNullOrEmpty(AppConfig.Instance.LastPlayedDevice))
             {
-                lblCurrentMediaInfo.Text = $"上次播放：{AppConfig.Instance.LastPlayedFile} 播放设备：{AppConfig.Instance.LastPlayedDevice}";
+                lblCurrentMediaInfo.Text = $"上次播放：{Path.GetFileName(AppConfig.Instance.LastPlayedFile)} 播放设备：{AppConfig.Instance.LastPlayedDevice}";
             }
 
             _dlnaManager.DeviceFound += OnDeviceFound;
             _dlnaManager.DiscoverFinished += OnDiscoverFinished;
-            _dlnaManager.PlayMediaInfo += OnPlayMediaInfo;
+            _dlnaManager.PlayPositionInfo += OnPlayPositionInfo;
             _dlnaManager.PlayNext += OnPlayNext;
         }
 
@@ -137,40 +138,38 @@ namespace DlnaPlayerApp
 
         private void btnPlayToDevice_Click(object sender, EventArgs e)
         {
-            _waitForm.Show(this);
-            try
+            _waitForm.Show(this, () =>
             {
-                if (lvPlaylist.Items.Count <= 0)
+                try
                 {
-                    logger.Warn("播放媒体文件失败，播放列表为空");
-                    return;
-                }
+                    if (lvPlaylist.Items.Count <= 0)
+                    {
+                        LogUtils.Warn(logger, "播放媒体文件失败，播放列表为空");
+                        return;
+                    }
 
-                if (_dlnaManager.CurrentDevice == null)
-                {
-                    logger.Warn("播放媒体文件失败，未选择播放设备");
-                    return;
-                }
+                    if (_dlnaManager.CurrentDevice == null)
+                    {
+                        LogUtils.Warn(logger, "播放媒体文件失败，未选择播放设备");
+                        return;
+                    }
 
-                if (SelectedItem != null)
-                {
-                    _currentPlayIndex = SelectedItem.Index - 1;
-                }
-                else
-                {
-                    _currentPlayIndex = -1;
-                }
+                    if (SelectedItem != null)
+                    {
+                        _currentPlayIndex = SelectedItem.Index - 1;
+                    }
+                    else
+                    {
+                        _currentPlayIndex = -1;
+                    }
 
-                OnPlayNext(sender, EventArgs.Empty);
-            }
-            catch (Exception ex)
-            {
-                logger.Error($"播放失败：{ex.Message}");
-            }
-            finally
-            {
-                _waitForm.Close();
-            }
+                    OnPlayNext(sender, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    LogUtils.Error(logger, $"播放失败：{ex.Message}");
+                }
+            });
         }
 
         private void btnClearLog_Click(object sender, EventArgs e)
@@ -181,8 +180,14 @@ namespace DlnaPlayerApp
         private void lvPlaylist_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             // 获取双击的ListView项目
-            ListViewHitTestInfo hitTest = lvPlaylist.HitTest(e.Location);
-            ListViewItem item = hitTest.Item;
+            //ListViewHitTestInfo hitTest = lvPlaylist.HitTest(e.Location);
+            //ListViewItem item = hitTest.Item;
+            if (lvPlaylist.SelectedItems.Count <= 0)
+            {
+                return;
+            }
+
+            var item = lvPlaylist.SelectedItems[0];
 
             // 如果双击了有效的项目
             if (item != null)
@@ -200,16 +205,31 @@ namespace DlnaPlayerApp
 
         private void btnResume_Click(object sender, EventArgs e)
         {
-            _waitForm.Show(this);
-            _dlnaManager.ResumePlayback();
-            _waitForm.Close();
+            if (_dlnaManager.CurrentDevice == null)
+            {
+                LogUtils.Error(logger, "恢复播放失败，未选择设备");
+                return;
+            }
+            _waitForm.Show(this, () =>
+            {
+                _dlnaManager.ResumePlayback();
+                _dlnaManager.CurrentDevice.ExpectState = EnumTransportState.PLAYING;
+            });
         }
 
         private void btnPause_Click(object sender, EventArgs e)
         {
-            _waitForm.Show(this);
-            _dlnaManager.PausePlayback();
-            _waitForm.Close();
+            if (_dlnaManager.CurrentDevice == null)
+            {
+                LogUtils.Error(logger, "暂停播放失败，未选择设备");
+                return;
+            }
+            _waitForm.Show(this, () =>
+            {
+                _dlnaManager.PausePlayback();
+                _dlnaManager.CurrentDevice.ExpectState = EnumTransportState.PAUSED_PLAYBACK;
+
+            });
         }
     }
 }

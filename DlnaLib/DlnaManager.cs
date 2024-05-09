@@ -7,13 +7,14 @@ using log4net;
 using System.Threading;
 using System.IO;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace DlnaLib
 {
     public sealed class DlnaManager : IDisposable
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DlnaManager));
-        private const int PLAY_STATE_QUERY_INTERVAL = 3000;
+        private const int PLAY_STATE_QUERY_INTERVAL = 2000;
 
         private Thread _findDeviceThread;
         private bool disposedValue;
@@ -24,12 +25,13 @@ namespace DlnaLib
 
         private Timer _playStateQueryTimer;
 
-        private EnumTransportState _lastState = EnumTransportState.NO_MEDIA_PRESENT;
+        private DateTime _lastSendVideoToDLNATime = DateTime.MinValue;
 
         public event EventHandler<DeviceFoundEventArgs> DeviceFound;
         public event EventHandler<EventArgs> DiscoverFinished;
         public event EventHandler<EventArgs> PlayNext;
         public event EventHandler<PlayMediaInfoEventArgs> PlayMediaInfo;
+        public event EventHandler<PlayPositionInfoEventArgs> PlayPositionInfo;
 
         public DlnaDevice CurrentDevice { get; set; }
 
@@ -52,32 +54,52 @@ namespace DlnaLib
                     return;
                 }
 
-                PlayMediaInfo mediaInfo = null;
-                if (CurrentDevice.SupportGetMediaInfo)
+                PositionInfo positionInfo = null;
+                TransportInfo transportInfo = null;
+                if (CurrentDevice.SupportGetPositionInfo)
                 {
-                    mediaInfo = GetMediaInfo(CurrentDevice.ControlUrl);
-
+                    positionInfo = GetPositionInfo(CurrentDevice.ControlUrl);
                 }
-                PlayMediaInfo?.Invoke(this, new PlayMediaInfoEventArgs(CurrentDevice, mediaInfo));
-
                 if (CurrentDevice.SupportGetTransportInfo)
                 {
-                    var transportInfo = GetTransportInfo(CurrentDevice.ControlUrl);
-                    if (transportInfo != null)
-                    {
-                        if (transportInfo.CurrentTransportState == EnumTransportState.STOPPED && _lastState == EnumTransportState.PLAYING)
-                        {
-                            PlayNext?.Invoke(this, new EventArgs());
-                        }
-
-                        _lastState = transportInfo.CurrentTransportState;
-                    }
-
+                    transportInfo = GetTransportInfo(CurrentDevice.ControlUrl);
                 }
+
+                if (positionInfo != null && transportInfo != null)
+                {
+                    if (positionInfo.Track <= 0 && positionInfo.RelTimeSpan >= positionInfo.TrackDurationSpan)
+                    {
+                        // 距离上次自动播放视频不足15秒忽略，针对播放广告的情况
+                        if ((DateTime.Now - _lastSendVideoToDLNATime).TotalSeconds < 15)
+                        {
+                            LogUtils.Warn(logger, "距离上次自动播放不足 15 秒，忽略本次自动播放");
+                            return;
+                        }
+                        LogUtils.Info(logger, $"Track={positionInfo.Track} RelTime={positionInfo.RelTime} TrackDuration={positionInfo.TrackDuration}");
+                        PlayNext?.Invoke(this, new EventArgs());
+
+                        _lastSendVideoToDLNATime = DateTime.Now;
+                    }
+                    //else if (transportInfo.CurrentTransportState != CurrentDevice.ExpectState)
+                    //{
+                    //    if (CurrentDevice.ExpectState == EnumTransportState.PLAYING)
+                    //    {
+                    //        logger.Info($"CurrentDevice.ExpectState={CurrentDevice.ExpectState} CurrentTransportState={transportInfo.CurrentTransportState}");
+                    //        ResumePlayback();
+                    //    }
+                    //    else if (CurrentDevice.ExpectState == EnumTransportState.PAUSED_PLAYBACK)
+                    //    {
+                    //        PausePlayback();
+                    //    }
+                    //}
+                }
+
+                PlayPositionInfo?.Invoke(this, new PlayPositionInfoEventArgs(CurrentDevice, positionInfo, transportInfo));
+
             }
             catch (Exception ex)
             {
-                logger.Error($"{nameof(PlayStateQueryTimerCallback)} - {ex.Message}");
+                LogUtils.Error(logger, ex.Message);
             }
             finally
             {
@@ -92,7 +114,7 @@ namespace DlnaLib
             DiscoverFinished?.Invoke(this, null);
         }
 
-        public void DiscoverDLNADevices(int discoverTimeSec = 5)
+        public void DiscoverDLNADevices(int discoverTimeSec = 3)
         {
             Task.Factory.StartNew(() =>
             {
@@ -108,7 +130,6 @@ namespace DlnaLib
         public void StopDiscoverDLNADevices()
         {
             _findDeviceThread?.Abort();
-            _findDeviceThread?.Join(3000);
             _findDeviceThread = null;
         }
 
@@ -137,15 +158,15 @@ namespace DlnaLib
                     // 解析响应中的LOCATION头部信息
                     var lines = response.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
                     var location = lines.FirstOrDefault(line => line.StartsWith("LOCATION:", StringComparison.InvariantCultureIgnoreCase));
-                    var serviceType = lines.FirstOrDefault(line => line.StartsWith("ST:", StringComparison.InvariantCultureIgnoreCase));
+                    //var serviceType = lines.FirstOrDefault(line => line.StartsWith("ST:", StringComparison.InvariantCultureIgnoreCase));
 
-                    if (serviceType != null)
-                    {
-                        if (!serviceType.Contains("urn:schemas-upnp-org:service:AVTransport:1"))
-                        {
-                            continue;
-                        }
-                    }
+                    //if (serviceType != null)
+                    //{
+                    //    if (!serviceType.Contains("urn:schemas-upnp-org:service:AVTransport:1"))
+                    //    {
+                    //        continue;
+                    //    }
+                    //}
 
                     if (location != null)
                     {
@@ -165,7 +186,7 @@ namespace DlnaLib
                 }
                 catch (Exception ex)
                 {
-                    logger.Error($"{nameof(InternalDiscoverDLNADevices)} - {ex.Message}");
+                    LogUtils.Error(logger, ex.Message);
                 }
             }
         }
@@ -203,32 +224,13 @@ namespace DlnaLib
                 // 获取响应
                 var responseText = GetResponseText(request);
 
-                logger.Debug(responseText);
+                LogUtils.Debug(logger, responseText);
 
-                logger.Info("媒体文件已发送至设备");
+                LogUtils.Info(logger, $"开始播放：{videoUrl}");
             }
             catch (Exception ex)
             {
-                logger.Error($"{nameof(SendVideoToDLNA)} - {ex.Message}");
-            }
-        }
-
-        private static string GetResponseText(HttpWebRequest request)
-        {
-            using (var response = (HttpWebResponse)request.GetResponse())
-            {
-                using (var responseStream = response.GetResponseStream())
-                {
-                    using (var memoryStream = new MemoryStream())
-                    {
-                        responseStream.CopyTo(memoryStream);
-
-                        var responseBytes = memoryStream.ToArray();
-                        var responseText = Encoding.UTF8.GetString(responseBytes);
-
-                        return responseText;
-                    }
-                }
+                LogUtils.Error(logger, ex.Message);
             }
         }
 
@@ -369,7 +371,7 @@ namespace DlnaLib
             }
             catch (Exception ex)
             {
-                logger.Error($"{nameof(GetTransportInfo)} - {ex.Message}");
+                LogUtils.Error(logger, ex.Message);
 
                 if (ex is WebException webException)
                 {
@@ -425,7 +427,7 @@ namespace DlnaLib
             }
             catch (Exception ex)
             {
-                logger.Error($"{nameof(GetMediaInfo)} - {ex.Message}");
+                LogUtils.Error(logger, ex.Message);
 
                 if (ex is WebException webException)
                 {
@@ -439,7 +441,61 @@ namespace DlnaLib
                 }
             }
 
-            return null; // 默认情况下假定视频未完成播放
+            return null;
+        }
+
+        private PositionInfo GetPositionInfo(string controlUrl)
+        {
+            try
+            {
+                // 创建HTTP请求
+                var request = (HttpWebRequest)WebRequest.Create(controlUrl);
+                request.Method = "POST";
+                request.ContentType = "text/xml; charset=utf-8";
+                request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#GetPositionInfo\"");
+
+                // 发送获取播放状态信息的请求
+                var body = @"<?xml version=""1.0""?>
+                    <s:Envelope xmlns:s=""http://schemas.xmlsoap.org/soap/envelope/"" s:encodingStyle=""http://schemas.xmlsoap.org/soap/encoding/"">
+                        <s:Body>
+                            <u:GetPositionInfo xmlns:u=""urn:schemas-upnp-org:service:AVTransport:1"">
+                                <InstanceID>0</InstanceID>
+                            </u:GetPositionInfo>
+                        </s:Body>
+                    </s:Envelope>";
+
+                var byteBody = Encoding.UTF8.GetBytes(body);
+                request.ContentLength = byteBody.Length;
+
+                using (var stream = request.GetRequestStream())
+                {
+                    stream.Write(byteBody, 0, byteBody.Length);
+                }
+
+                // 获取响应
+                var response = (HttpWebResponse)request.GetResponse();
+                using (var reader = new StreamReader(response.GetResponseStream()))
+                {
+                    var responseXml = reader.ReadToEnd();
+                    return PositionInfo.ParseXml(responseXml);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogUtils.Error(logger, ex.Message);
+
+                if (ex is WebException webException)
+                {
+                    if (webException.Response is HttpWebResponse webResponse)
+                    {
+                        if (webResponse.StatusCode == HttpStatusCode.NotImplemented)
+                        {
+                            CurrentDevice.SupportGetPositionInfo = false;
+                        }
+                    }
+                }
+            }
+            return null;
         }
 
         public void StartPlayback(string controlUrl)
@@ -487,7 +543,7 @@ namespace DlnaLib
             {
                 if (CurrentDevice == null)
                 {
-                    logger.Error("暂停播放失败：未选择设备");
+                    LogUtils.Error(logger, "暂停播放失败：未选择设备");
                     return;
                 }
                 // 创建HTTP请求
@@ -520,13 +576,13 @@ namespace DlnaLib
                 // 获取响应
                 var responseText = GetResponseText(request);
 
-                logger.Debug(responseText);
+                LogUtils.Debug(logger, responseText);
 
-                logger.Info("已暂停播放");
+                LogUtils.Info(logger, "已暂停播放");
             }
             catch (Exception ex)
             {
-                logger.Error($"{nameof(PausePlayback)} - {ex.Message}");
+                LogUtils.Error(logger, ex.Message);
             }
         }
 
@@ -536,7 +592,7 @@ namespace DlnaLib
             {
                 if (CurrentDevice == null)
                 {
-                    logger.Error("恢复播放失败：未选择设备");
+                    LogUtils.Error(logger, "恢复播放失败：未选择设备");
                     return;
                 }
                 // 创建HTTP请求
@@ -570,13 +626,13 @@ namespace DlnaLib
                 // 获取响应
                 var responseText = GetResponseText(request);
 
-                logger.Debug(responseText);
+                LogUtils.Debug(logger, responseText);
 
-                logger.Info("已恢复播放");
+                LogUtils.Info(logger, "已恢复播放");
             }
             catch (Exception ex)
             {
-                logger.Error($"{nameof(ResumePlayback)} - {ex.Message}");
+                LogUtils.Error(logger, ex.Message);
             }
         }
 
@@ -615,6 +671,25 @@ namespace DlnaLib
             catch (Exception ex)
             {
                 Console.WriteLine("Error stopping playback: " + ex.Message);
+            }
+        }
+
+        private static string GetResponseText(HttpWebRequest request)
+        {
+            using (var response = (HttpWebResponse)request.GetResponse())
+            {
+                using (var responseStream = response.GetResponseStream())
+                {
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        responseStream.CopyTo(memoryStream);
+
+                        var responseBytes = memoryStream.ToArray();
+                        var responseText = Encoding.UTF8.GetString(responseBytes);
+
+                        return responseText;
+                    }
+                }
             }
         }
 

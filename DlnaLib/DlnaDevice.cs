@@ -17,8 +17,13 @@ namespace DlnaLib
         public string DeviceLocation { get; private set; }
         public string ControlUrl { get; private set; }
         public string BaseUrl { get; private set; }
+        /// <summary>
+        /// 用户期待的状态，目前有三种：PLAYING、PAUSED_PLAYBACK、NO_MEDIA_PRESENT
+        /// </summary>
+        public EnumTransportState ExpectState { get; set; } = EnumTransportState.NO_MEDIA_PRESENT;
         public bool SupportGetMediaInfo { get; set; } = true;
         public bool SupportGetTransportInfo { get; set; } = true;
+        public bool SupportGetPositionInfo { get; set; } = true;
 
         public DlnaDevice(string deviceLocation)
         {
@@ -50,11 +55,9 @@ namespace DlnaLib
             }
             catch (Exception ex)
             {
-                logger.Error(ex);
+                LogUtils.Error(logger, ex);
             }
         }
-
-
 
         public bool IsValid()
         {
@@ -116,7 +119,7 @@ namespace DlnaLib
             }
             catch (Exception ex)
             {
-                logger.Error(ex);
+                LogUtils.Error(logger, ex.Message);
                 return null;
             }
         }
