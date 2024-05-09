@@ -12,11 +12,11 @@ namespace DlnaLib
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DlnaDevice));
 
-        public string DeviceId { get; private set; }
-        public string DeviceName { get; private set; }
-        public string DeviceLocation { get; private set; }
-        public string ControlUrl { get; private set; }
-        public string BaseUrl { get; private set; }
+        public string DeviceId { get; set; }
+        public string DeviceName { get; set; }
+        public string DeviceLocation { get; set; }
+        public string ControlUrl { get; set; }
+        public string BaseUrl { get; set; }
         /// <summary>
         /// 用户期待的状态，目前有三种：PLAYING、PAUSED_PLAYBACK、NO_MEDIA_PRESENT
         /// </summary>
@@ -24,6 +24,11 @@ namespace DlnaLib
         public bool SupportGetMediaInfo { get; set; } = true;
         public bool SupportGetTransportInfo { get; set; } = true;
         public bool SupportGetPositionInfo { get; set; } = true;
+
+        public DlnaDevice()
+        {
+                
+        }
 
         public DlnaDevice(string deviceLocation)
         {

@@ -7,7 +7,6 @@ using log4net;
 using System.Threading;
 using System.IO;
 using System.Threading.Tasks;
-using System.Reflection;
 
 namespace DlnaLib
 {
@@ -32,6 +31,7 @@ namespace DlnaLib
         public event EventHandler<EventArgs> PlayNext;
         public event EventHandler<PlayMediaInfoEventArgs> PlayMediaInfo;
         public event EventHandler<PlayPositionInfoEventArgs> PlayPositionInfo;
+        public event EventHandler<DevicePropertyChangedEventArgs> DevicePropertyChanged;
 
         public DlnaDevice CurrentDevice { get; set; }
 
@@ -380,6 +380,7 @@ namespace DlnaLib
                         if (webResponse.StatusCode == HttpStatusCode.NotImplemented)
                         {
                             CurrentDevice.SupportGetTransportInfo = false;
+                            DevicePropertyChanged?.Invoke(this, new DevicePropertyChangedEventArgs(CurrentDevice));
                         }
                     }
                 }
@@ -436,6 +437,7 @@ namespace DlnaLib
                         if (webResponse.StatusCode == HttpStatusCode.NotImplemented)
                         {
                             CurrentDevice.SupportGetMediaInfo = false;
+                            DevicePropertyChanged?.Invoke(this, new DevicePropertyChangedEventArgs(CurrentDevice));
                         }
                     }
                 }
@@ -491,6 +493,7 @@ namespace DlnaLib
                         if (webResponse.StatusCode == HttpStatusCode.NotImplemented)
                         {
                             CurrentDevice.SupportGetPositionInfo = false;
+                            DevicePropertyChanged?.Invoke(this, new DevicePropertyChangedEventArgs(CurrentDevice));
                         }
                     }
                 }

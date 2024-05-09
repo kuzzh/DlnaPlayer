@@ -64,6 +64,12 @@ namespace DlnaPlayerApp
             _dlnaManager.DiscoverFinished += OnDiscoverFinished;
             _dlnaManager.PlayPositionInfo += OnPlayPositionInfo;
             _dlnaManager.PlayNext += OnPlayNext;
+            _dlnaManager.DevicePropertyChanged += _OnDevicePropertyChanged;
+        }
+
+        private void _OnDevicePropertyChanged(object sender, DevicePropertyChangedEventArgs e)
+        {
+            DeviceConfig.Default.SaveConfig();
         }
 
         protected override void OnLoad(EventArgs e)
@@ -73,7 +79,19 @@ namespace DlnaPlayerApp
             tbMediaDir.Text = AppConfig.Instance.MediaDir;
 
             LoadPlaylist(AppConfig.Instance.MediaDir, true);
-            btnDiscoverDevices.PerformClick();
+
+            if (DeviceConfig.Default.Devices.Count <= 0)
+            {
+                btnDiscoverDevices.PerformClick();
+            }
+            else
+            {
+                foreach (var device in DeviceConfig.Default.Devices)
+                {
+                    AddDevice(device, false);
+                }
+                cbCurrentDevice.SelectedItem = DeviceConfig.Default.CurrentDevice ?? DeviceConfig.Default.Devices[0];
+            }
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
@@ -88,7 +106,9 @@ namespace DlnaPlayerApp
         {
             _dlnaDevices.Clear();
             cbCurrentDevice.Items.Clear();
-            //lblCurrentMediaInfo.Text = "";
+            DeviceConfig.Default.Devices.Clear();
+            DeviceConfig.Default.CurrentDevice = null;
+            DeviceConfig.Default.SaveConfig();
             btnDiscoverDevices.Enabled = false;
 
             _dlnaManager.DiscoverDLNADevices();
@@ -96,8 +116,9 @@ namespace DlnaPlayerApp
 
         private void cbCurrentDevice_SelectedIndexChanged(object sender, EventArgs e)
         {
-            //lblCurrentMediaInfo.Text = "";
             _dlnaManager.CurrentDevice = (DlnaDevice)cbCurrentDevice.SelectedItem;
+            DeviceConfig.Default.CurrentDevice = (DlnaDevice)cbCurrentDevice.SelectedItem;
+            DeviceConfig.Default.SaveConfig();
         }
 
         private void btnSelectDir_Click(object sender, EventArgs e)
@@ -214,6 +235,7 @@ namespace DlnaPlayerApp
             {
                 _dlnaManager.ResumePlayback();
                 _dlnaManager.CurrentDevice.ExpectState = EnumTransportState.PLAYING;
+                DeviceConfig.Default.SaveConfig();
             });
         }
 
@@ -228,7 +250,7 @@ namespace DlnaPlayerApp
             {
                 _dlnaManager.PausePlayback();
                 _dlnaManager.CurrentDevice.ExpectState = EnumTransportState.PAUSED_PLAYBACK;
-
+                DeviceConfig.Default.SaveConfig();
             });
         }
     }

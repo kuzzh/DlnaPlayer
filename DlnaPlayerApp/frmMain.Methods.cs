@@ -128,6 +128,7 @@ namespace DlnaPlayerApp
                 var nextFileUrl = AppHelper.BuildMediaUrl(playItem.Tag.ToString(), _dlnaManager.CurrentDevice.BaseUrl);
                 _dlnaManager.SendVideoToDLNA(nextFileUrl);
                 _dlnaManager.CurrentDevice.ExpectState = EnumTransportState.PLAYING;
+                DeviceConfig.Default.SaveConfig();
 
                 BeginInvoke(new Action(() =>
                 {
@@ -207,15 +208,30 @@ namespace DlnaPlayerApp
                 BeginInvoke((MethodInvoker)delegate { OnDeviceFound(sender, e); });
                 return;
             }
-            LogUtils.Debug(logger, $"{e.DlnaDevice.DeviceName} - {e.DlnaDevice.DeviceLocation}");
-            if (!_dlnaDevices.Contains(e.DlnaDevice))
+            LogUtils.Debug(logger, $"Found Device: {e.DlnaDevice.DeviceName} - {e.DlnaDevice.DeviceLocation}");
+
+            AddDevice(e.DlnaDevice, true);
+        }
+
+        private void AddDevice(DlnaDevice device, bool saveToConfig)
+        {
+            if (!_dlnaDevices.Contains(device))
             {
-                cbCurrentDevice.Items.Add(e.DlnaDevice);
-                _dlnaDevices.Add(e.DlnaDevice);
+                cbCurrentDevice.Items.Add(device);
+                _dlnaDevices.Add(device);
 
                 if (cbCurrentDevice.SelectedItem == null)
                 {
-                    cbCurrentDevice.SelectedItem = e.DlnaDevice;
+                    cbCurrentDevice.SelectedItem = device;
+                }
+            }
+
+            if (saveToConfig)
+            {
+                if (!DeviceConfig.Default.Devices.Contains(device))
+                {
+                    DeviceConfig.Default.Devices.Add(device);
+                    DeviceConfig.Default.SaveConfig();
                 }
             }
         }

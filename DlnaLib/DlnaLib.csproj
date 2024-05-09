@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DeviceFoundEventArgs.cs" />
+    <Compile Include="DevicePropertyChangedEventArgs.cs" />
     <Compile Include="DlnaDevice.cs" />
     <Compile Include="DlnaManager.cs" />
     <Compile Include="EnumTransportState.cs" />
