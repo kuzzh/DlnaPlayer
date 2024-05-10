@@ -10,6 +10,13 @@ using System.Web;
 using System.Windows.Forms;
 using System.Threading;
 using System.Linq;
+using DlnaPlayerApp.Properties;
+using DlnaPlayerApp.WebSocket.Protocol;
+using DlnaPlayerApp.Utils;
+using DlnaPlayerApp.Config;
+using DlnaLib.Event;
+using DlnaLib.Model;
+using DlnaLib.Utils;
 
 namespace DlnaPlayerApp
 {
@@ -71,7 +78,7 @@ namespace DlnaPlayerApp
                     {
                         NginxUtils.StopServer();
                         Thread.Sleep(200);
-                        NginxUtils.SetNginxConf(mediaDir, AppConfig.Instance.HttpPort);
+                        NginxUtils.SetNginxConf(mediaDir, AppConfig.Default.HttpPort);
                         Thread.Sleep(200);
                         NginxUtils.StartServer();
                     }
@@ -91,11 +98,24 @@ namespace DlnaPlayerApp
 
                     lvPlaylist.Items.AddRange(items);
 
+                    _videoItems.Clear();
+                    _videoItems.AddRange(items.Select(item => new VideoItem
+                    {
+                        Title = Path.GetFileName(item.Tag.ToString()),
+                        RelPath = AppHelper.GetRelativePath(mediaDir, item.Tag.ToString())
+                    }));
+
+                    SaveConfig();
+
                     LogUtils.Info(logger, $"播放列表加载完成，共加载 {listViewItems.Count} 个媒体文件");
                 }));
             });
         }
 
+        public List<VideoItem> GetVideoItems()
+        {
+            return _videoItems;
+        }
 
         private void OnPlayNext(object sender, EventArgs e)
         {
@@ -119,29 +139,35 @@ namespace DlnaPlayerApp
                     LogUtils.Warn(logger, "播放媒体文件失败，播放列表为空");
                     return;
                 }
-                if (_dlnaManager.CurrentDevice == null)
+                if (DlnaManager.Instance.CurrentDevice == null)
                 {
                     LogUtils.Warn(logger, "播放媒体文件失败，未选择播放设备");
                     return;
                 }
 
-                var nextFileUrl = AppHelper.BuildMediaUrl(playItem.Tag.ToString(), _dlnaManager.CurrentDevice.BaseUrl);
-                _dlnaManager.SendVideoToDLNA(nextFileUrl);
-                _dlnaManager.CurrentDevice.ExpectState = EnumTransportState.PLAYING;
-                DeviceConfig.Default.SaveConfig();
-
-                BeginInvoke(new Action(() =>
+                var nextFileUrl = AppHelper.BuildMediaUrl(playItem.Tag.ToString(), DlnaManager.Instance.CurrentDevice.BaseUrl);
+                if (!DlnaManager.Instance.SendVideoToDLNA(nextFileUrl, out string errorMsg))
                 {
-                    playItem.Selected = true;
-                    playItem.Focused = true;
-                    lvPlaylist.Select();
+                    LogUtils.Error(logger, errorMsg);
+                }
+                else
+                {
+                    DlnaManager.Instance.CurrentDevice.ExpectState = EnumTransportState.PLAYING;
+                    DeviceConfig.Default.SaveConfig();
 
-                    ResetListViewItemForeColor();
-                }));
+                    BeginInvoke(new Action(() =>
+                    {
+                        playItem.Selected = true;
+                        playItem.Focused = true;
+                        lvPlaylist.Select();
 
-                AppConfig.Instance.LastPlayedDevice = _dlnaManager.CurrentDevice.DeviceName;
-                AppConfig.Instance.LastPlayedFile = playItem.Tag.ToString();
-                AppConfig.Instance.SaveConfig();
+                        ResetListViewItemForeColor();
+                    }));
+
+                    AppConfig.Default.LastPlayedDevice = DlnaManager.Instance.CurrentDevice.DeviceName;
+                    AppConfig.Default.LastPlayedFile = playItem.Tag.ToString();
+                    AppConfig.Default.SaveConfig();
+                }
             });
         }
 
@@ -171,7 +197,7 @@ namespace DlnaPlayerApp
         {
             foreach (ListViewItem item in lvPlaylist.Items)
             {
-                var url = AppHelper.BuildMediaUrl(item.Tag.ToString(), _dlnaManager.CurrentDevice.BaseUrl);
+                var url = AppHelper.BuildMediaUrl(item.Tag.ToString(), DlnaManager.Instance.CurrentDevice.BaseUrl);
                 if (url == videoUrl)
                 {
                     return item;
@@ -238,8 +264,8 @@ namespace DlnaPlayerApp
 
         private void SaveConfig()
         {
-            AppConfig.Instance.MediaDir = tbMediaDir.Text.Trim();
-            AppConfig.Instance.SaveConfig();
+            AppConfig.Default.MediaDir = tbMediaDir.Text.Trim();
+            AppConfig.Default.SaveConfig();
         }
 
         private void SetListViewItemHeight(int height)

@@ -1,7 +1,8 @@
-﻿using log4net;
+﻿using DlnaLib.Model;
+using log4net;
 using System;
 
-namespace DlnaLib
+namespace DlnaLib.Event
 {
     public class DeviceFoundEventArgs : EventArgs
     {

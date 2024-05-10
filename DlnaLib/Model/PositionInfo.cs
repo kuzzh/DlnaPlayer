@@ -2,7 +2,7 @@
 using System;
 using System.Xml.XPath;
 
-namespace DlnaLib
+namespace DlnaLib.Model
 {
     //<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>
     //<u:GetPositionInfoResponse xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">

@@ -1,4 +1,4 @@
-﻿namespace DlnaLib
+﻿namespace DlnaLib.Model
 {
     public enum EnumTransportState
     {

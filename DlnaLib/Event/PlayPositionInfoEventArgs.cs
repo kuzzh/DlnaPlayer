@@ -1,6 +1,7 @@
-﻿using System;
+﻿using DlnaLib.Model;
+using System;
 
-namespace DlnaLib
+namespace DlnaLib.Event
 {
     public class PlayPositionInfoEventArgs : EventArgs
     {

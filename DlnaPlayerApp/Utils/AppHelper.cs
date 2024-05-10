@@ -6,8 +6,13 @@ using System.Web;
 using System.Linq;
 using System.IO;
 using System;
+using System.Drawing;
+using QRCoder;
+using DlnaPlayerApp.Config;
+using DlnaPlayerApp.Properties;
+using System.Text;
 
-namespace DlnaPlayerApp
+namespace DlnaPlayerApp.Utils
 {
     internal class AppHelper
     {
@@ -41,7 +46,7 @@ namespace DlnaPlayerApp
             return localIPs;
         }
 
-        public static string BuildMediaUrl(string filePath, string baseUrl)
+        public static string GetWebBaseUrl(string baseUrl)
         {
             if (!_localIPv4s.TryGetValue(baseUrl, out string hostIp))
             {
@@ -54,15 +59,65 @@ namespace DlnaPlayerApp
 
                 _localIPv4s[baseUrl] = hostIp;
             }
-            
-            var relFilePath = GetRelativePath(AppConfig.Instance.MediaDir, filePath);
+            if (string.IsNullOrEmpty(hostIp))
+            {
+                return null;
+            }
+            return $"http://{hostIp}:{AppConfig.Default.HttpPort}";
+        }
 
-            return $"http://{hostIp}:{AppConfig.Instance.HttpPort}/{HttpUtility.UrlEncode(relFilePath)}";
+        public static string BuildMediaUrl(string filePath, string baseUrl)
+        {
+            var webBaseUrl = GetWebBaseUrl(baseUrl);
+            
+            var relFilePath = GetRelativePath(AppConfig.Default.MediaDir, filePath);
+
+            return $"{webBaseUrl}/{HttpUtility.UrlEncode(relFilePath)}";
         }
 
         public static string GetRelativePath(string basePath, string targetPath)
         {
             return targetPath.Replace(basePath, "/").Replace('\\', '/');
+        }
+
+        public static Image GenerateQRCodeImage(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return null;
+            }
+            var qrGenerator = new QRCodeGenerator();
+            var qrCodeData = qrGenerator.CreateQrCode(url, QRCodeGenerator.ECCLevel.Q);
+            var qrCode = new PngByteQRCode(qrCodeData);
+            var qrCodeImage = qrCode.GetGraphic(20);
+
+            return Image.FromStream(new MemoryStream(qrCodeImage));
+        }
+
+        public static void MakeSureControlFileExist(string mediaDir)
+        {
+            var controlFile = PathUtils.GetControlFilePath(mediaDir);
+            if (string.IsNullOrEmpty(controlFile))
+            {
+                return;
+            }
+            if (!File.Exists(controlFile))
+            {
+                File.WriteAllText(controlFile, Resources.control, Encoding.UTF8);
+            }
+        }
+
+        public static void RemoveControlFile(string mediaDir)
+        {
+            var controLFile = PathUtils.GetControlFilePath(mediaDir);
+            if (string.IsNullOrEmpty(controLFile))
+            {
+                return;
+            }
+            if (File.Exists(controLFile))
+            {
+                File.Delete(controLFile);
+            }
         }
     }
 }

@@ -1,8 +1,17 @@
 ﻿using DlnaLib;
+using DlnaLib.Event;
+using DlnaLib.Model;
+using DlnaLib.Utils;
+using DlnaPlayerApp.Config;
+using DlnaPlayerApp.Utils;
+using DlnaPlayerApp.WebSocket.Protocol;
 using log4net;
+using QRCoder;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
+using System.Security.Policy;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -14,21 +23,17 @@ namespace DlnaPlayerApp
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(frmMain));
 
-        private readonly DlnaManager _dlnaManager = new DlnaManager();
-
         private readonly List<DlnaDevice> _dlnaDevices = new List<DlnaDevice>();
 
         private readonly List<string> SupporetdVideoFormats = new List<string>
         {
             "*.mp4","*.avi","*.wmv","*.mkv"
         };
-        private readonly List<string> SupportedAudioFormats = new List<string>
-        {
-            "*.mp3", "*.wav", "*.aac"
-        };
         private int _currentPlayIndex = -1;
 
-        private WaitWndFun _waitForm = new WaitWndFun();
+        private readonly WaitWndFun _waitForm = new WaitWndFun();
+
+        private readonly List<VideoItem> _videoItems = new List<VideoItem>();
 
         private ListViewItem SelectedItem
         {
@@ -42,8 +47,12 @@ namespace DlnaPlayerApp
             }
         }
 
+        public static frmMain MainForm;
+
         public frmMain()
         {
+            MainForm = this;
+
             InitializeComponent();
 
             InitLogAppender();
@@ -54,20 +63,20 @@ namespace DlnaPlayerApp
             lblCurrentMediaInfo.Spring = true;
             statusStrip1.Renderer = new StatusStripRenderer();
 
-            if (!string.IsNullOrEmpty(AppConfig.Instance.LastPlayedFile) &&
-                !string.IsNullOrEmpty(AppConfig.Instance.LastPlayedDevice))
+            if (!string.IsNullOrEmpty(AppConfig.Default.LastPlayedFile) &&
+                !string.IsNullOrEmpty(AppConfig.Default.LastPlayedDevice))
             {
-                lblCurrentMediaInfo.Text = $"上次播放：{Path.GetFileName(AppConfig.Instance.LastPlayedFile)} 播放设备：{AppConfig.Instance.LastPlayedDevice}";
+                lblCurrentMediaInfo.Text = $"上次播放：{Path.GetFileName(AppConfig.Default.LastPlayedFile)} 播放设备：{AppConfig.Default.LastPlayedDevice}";
             }
 
-            _dlnaManager.DeviceFound += OnDeviceFound;
-            _dlnaManager.DiscoverFinished += OnDiscoverFinished;
-            _dlnaManager.PlayPositionInfo += OnPlayPositionInfo;
-            _dlnaManager.PlayNext += OnPlayNext;
-            _dlnaManager.DevicePropertyChanged += _OnDevicePropertyChanged;
+            DlnaManager.Instance.DeviceFound += OnDeviceFound;
+            DlnaManager.Instance.DiscoverFinished += OnDiscoverFinished;
+            DlnaManager.Instance.PlayPositionInfo += OnPlayPositionInfo;
+            DlnaManager.Instance.PlayNext += OnPlayNext;
+            DlnaManager.Instance.DevicePropertyChanged += OnDevicePropertyChanged;
         }
 
-        private void _OnDevicePropertyChanged(object sender, DevicePropertyChangedEventArgs e)
+        private void OnDevicePropertyChanged(object sender, DevicePropertyChangedEventArgs e)
         {
             DeviceConfig.Default.SaveConfig();
         }
@@ -76,9 +85,9 @@ namespace DlnaPlayerApp
         {
             base.OnLoad(e);
 
-            tbMediaDir.Text = AppConfig.Instance.MediaDir;
+            tbMediaDir.Text = AppConfig.Default.MediaDir;
 
-            LoadPlaylist(AppConfig.Instance.MediaDir, true);
+            LoadPlaylist(AppConfig.Default.MediaDir, true);
 
             if (DeviceConfig.Default.Devices.Count <= 0)
             {
@@ -96,10 +105,12 @@ namespace DlnaPlayerApp
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            if (MessageBox.Show("确定要退出吗？", "询问", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.Cancel)
+            {
+                e.Cancel = true;
+                return;
+            }
             base.OnFormClosing(e);
-
-            _dlnaManager.Dispose();
-            NginxUtils.StopServer();
         }
 
         private void btnDiscoverDevices_Click(object sender, EventArgs e)
@@ -111,12 +122,12 @@ namespace DlnaPlayerApp
             DeviceConfig.Default.SaveConfig();
             btnDiscoverDevices.Enabled = false;
 
-            _dlnaManager.DiscoverDLNADevices();
+            DlnaManager.Instance.DiscoverDLNADevices();
         }
 
         private void cbCurrentDevice_SelectedIndexChanged(object sender, EventArgs e)
         {
-            _dlnaManager.CurrentDevice = (DlnaDevice)cbCurrentDevice.SelectedItem;
+            DlnaManager.Instance.CurrentDevice = (DlnaDevice)cbCurrentDevice.SelectedItem;
             DeviceConfig.Default.CurrentDevice = (DlnaDevice)cbCurrentDevice.SelectedItem;
             DeviceConfig.Default.SaveConfig();
         }
@@ -135,15 +146,13 @@ namespace DlnaPlayerApp
 
                     tbMediaDir.Text = selectedDir;
                     LoadPlaylist(selectedDir, true);
-
-                    SaveConfig();
                 }
             }
         }
 
         private void 复制链接ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (lvPlaylist.SelectedItems.Count <= 0 || _dlnaManager.CurrentDevice == null)
+            if (lvPlaylist.SelectedItems.Count <= 0 || DlnaManager.Instance.CurrentDevice == null)
             {
                 return;
             }
@@ -151,7 +160,7 @@ namespace DlnaPlayerApp
             var mediaLinkBuilder = new StringBuilder();
             foreach (ListViewItem item in lvPlaylist.SelectedItems)
             {
-                mediaLinkBuilder.AppendLine(AppHelper.BuildMediaUrl(item.Tag.ToString(), _dlnaManager.CurrentDevice.BaseUrl));
+                mediaLinkBuilder.AppendLine(AppHelper.BuildMediaUrl(item.Tag.ToString(), DlnaManager.Instance.CurrentDevice.BaseUrl));
             }
 
             Clipboard.SetText(mediaLinkBuilder.ToString());
@@ -169,7 +178,7 @@ namespace DlnaPlayerApp
                         return;
                     }
 
-                    if (_dlnaManager.CurrentDevice == null)
+                    if (DlnaManager.Instance.CurrentDevice == null)
                     {
                         LogUtils.Warn(logger, "播放媒体文件失败，未选择播放设备");
                         return;
@@ -200,9 +209,6 @@ namespace DlnaPlayerApp
 
         private void lvPlaylist_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            // 获取双击的ListView项目
-            //ListViewHitTestInfo hitTest = lvPlaylist.HitTest(e.Location);
-            //ListViewItem item = hitTest.Item;
             if (lvPlaylist.SelectedItems.Count <= 0)
             {
                 return;
@@ -210,10 +216,8 @@ namespace DlnaPlayerApp
 
             var item = lvPlaylist.SelectedItems[0];
 
-            // 如果双击了有效的项目
             if (item != null)
             {
-                // 执行你的操作，比如显示项目的内容
                 _currentPlayIndex = item.Index - 1;
                 OnPlayNext(null, new EventArgs());
             }
@@ -221,37 +225,75 @@ namespace DlnaPlayerApp
 
         private void btnRefreshPlaylist_Click(object sender, EventArgs e)
         {
-            LoadPlaylist(AppConfig.Instance.MediaDir, false);
+            LoadPlaylist(AppConfig.Default.MediaDir, false);
         }
 
         private void btnResume_Click(object sender, EventArgs e)
         {
-            if (_dlnaManager.CurrentDevice == null)
+            if (DlnaManager.Instance.CurrentDevice == null)
             {
-                LogUtils.Error(logger, "恢复播放失败，未选择设备");
+                LogUtils.Error(logger, "继续播放失败，未选择设备");
                 return;
             }
             _waitForm.Show(this, () =>
             {
-                _dlnaManager.ResumePlayback();
-                _dlnaManager.CurrentDevice.ExpectState = EnumTransportState.PLAYING;
-                DeviceConfig.Default.SaveConfig();
+                if (!DlnaManager.Instance.ResumePlayback(out string errorMsg))
+                {
+                    LogUtils.Error(logger, errorMsg);
+                }
+                else
+                {
+                    DlnaManager.Instance.CurrentDevice.ExpectState = EnumTransportState.PLAYING;
+                    DeviceConfig.Default.SaveConfig();
+                }
             });
         }
 
         private void btnPause_Click(object sender, EventArgs e)
         {
-            if (_dlnaManager.CurrentDevice == null)
+            if (DlnaManager.Instance.CurrentDevice == null)
             {
                 LogUtils.Error(logger, "暂停播放失败，未选择设备");
                 return;
             }
             _waitForm.Show(this, () =>
             {
-                _dlnaManager.PausePlayback();
-                _dlnaManager.CurrentDevice.ExpectState = EnumTransportState.PAUSED_PLAYBACK;
-                DeviceConfig.Default.SaveConfig();
+                if (!DlnaManager.Instance.PausePlayback(out string errorMsg))
+                {
+                    LogUtils.Error(logger, errorMsg);
+                }
+                else
+                {
+                    DlnaManager.Instance.CurrentDevice.ExpectState = EnumTransportState.PAUSED_PLAYBACK;
+                    DeviceConfig.Default.SaveConfig();
+                }
             });
+        }
+
+        private void btnQRCode_Click(object sender, EventArgs e)
+        {
+            if (DlnaManager.Instance.CurrentDevice == null)
+            {
+                LogUtils.Warn(logger, "未选择设备");
+                return;
+            }
+
+            var qrForm = new Form
+            {
+                Text = "Web 二维码",
+                Size = new Size(400, 400),
+                StartPosition = FormStartPosition.CenterParent
+            };
+
+            var qrImage = new PictureBox
+            {
+                Dock = DockStyle.Fill,
+                SizeMode = PictureBoxSizeMode.StretchImage,
+                Image = AppHelper.GenerateQRCodeImage($"{AppHelper.GetWebBaseUrl(DlnaManager.Instance.CurrentDevice.BaseUrl)}/control.html"),
+            };
+            qrForm.Controls.Add(qrImage);
+
+            qrForm.ShowDialog(this);
         }
     }
 }

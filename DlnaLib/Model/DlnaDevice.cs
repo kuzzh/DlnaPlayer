@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using DlnaLib.Utils;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +7,7 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
-namespace DlnaLib
+namespace DlnaLib.Model
 {
     public class DlnaDevice : IEquatable<DlnaDevice>
     {

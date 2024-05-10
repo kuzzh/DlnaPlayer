@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 
-namespace DlnaPlayerApp
+namespace DlnaPlayerApp.Utils
 {
     internal class NginxUtils
     {

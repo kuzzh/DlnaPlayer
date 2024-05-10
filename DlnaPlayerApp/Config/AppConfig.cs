@@ -1,25 +1,36 @@
-﻿using System.Configuration;
+﻿using DlnaPlayerApp.Utils;
+using System.Configuration;
 
-namespace DlnaPlayerApp
+namespace DlnaPlayerApp.Config
 {
     internal class AppConfig
     {
-        public string MediaDir { get; set; }
+        private string _mediaDir;
+        public string MediaDir {
+            get { return _mediaDir; }
+            set
+            {
+                AppHelper.RemoveControlFile(_mediaDir);
+                _mediaDir = value;
+                AppHelper.MakeSureControlFileExist(_mediaDir);
+            }
+        }
         public int HttpPort { get; set; } = 1573;
+        public int WebSocketPort { get; set; } = 1574;
         public string LastPlayedFile { get; set; }
         public string LastPlayedDevice { get; set; }
 
-        private static AppConfig instance;
-        public static AppConfig Instance
+        private static AppConfig _default;
+        public static AppConfig Default
         {
             get
             {
-                if (instance == null)
+                if (_default == null)
                 {
-                    instance = new AppConfig();
-                    instance.LoadConfig();
+                    _default = new AppConfig();
+                    _default.LoadConfig();
                 }
-                return instance;
+                return _default;
             }
         }
 
@@ -29,6 +40,10 @@ namespace DlnaPlayerApp
             if (int.TryParse(ConfigurationManager.AppSettings[nameof(HttpPort)], out int port))
             {
                 HttpPort = port;
+            }
+            if (int.TryParse(ConfigurationManager.AppSettings[nameof(WebSocketPort)], out int wsPort))
+            {
+                WebSocketPort = wsPort;
             }
             LastPlayedFile = ConfigurationManager.AppSettings[nameof(LastPlayedFile)];
             LastPlayedDevice = ConfigurationManager.AppSettings[nameof(LastPlayedDevice)];
@@ -42,6 +57,7 @@ namespace DlnaPlayerApp
             // 修改键值对
             ModifyValue(config, nameof(MediaDir), MediaDir);
             ModifyValue(config, nameof(HttpPort), HttpPort.ToString());
+            ModifyValue(config, nameof(WebSocketPort), WebSocketPort.ToString());
             ModifyValue(config, nameof(LastPlayedFile), LastPlayedFile);
             ModifyValue(config, nameof(LastPlayedDevice), LastPlayedDevice);
 

@@ -7,6 +7,9 @@ using log4net;
 using System.Threading;
 using System.IO;
 using System.Threading.Tasks;
+using DlnaLib.Event;
+using DlnaLib.Model;
+using DlnaLib.Utils;
 
 namespace DlnaLib
 {
@@ -35,7 +38,7 @@ namespace DlnaLib
 
         public DlnaDevice CurrentDevice { get; set; }
 
-        public DlnaManager()
+        private DlnaManager()
         {
             _udpClient = new UdpClient
             {
@@ -43,6 +46,19 @@ namespace DlnaLib
             };
             _discoverTimer = new Timer(DiscoverTimerCallback, null, Timeout.Infinite, Timeout.Infinite);
             _playStateQueryTimer = new Timer(PlayStateQueryTimerCallback, null, PLAY_STATE_QUERY_INTERVAL, Timeout.Infinite);
+        }
+
+        private static DlnaManager _instance;
+        public static DlnaManager Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new DlnaManager();
+                }
+                return _instance;
+            }
         }
 
         private void PlayStateQueryTimerCallback(object state)
@@ -191,10 +207,12 @@ namespace DlnaLib
             }
         }
 
-        public void SendVideoToDLNA(string videoUrl)
+        public bool SendVideoToDLNA(string videoUrl, out string errorMsg)
         {
             try
             {
+                errorMsg = "";
+
                 // 创建HTTP请求
                 var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
@@ -226,11 +244,12 @@ namespace DlnaLib
 
                 LogUtils.Debug(logger, responseText);
 
-                LogUtils.Info(logger, $"开始播放：{videoUrl}");
+                return true;
             }
             catch (Exception ex)
             {
-                LogUtils.Error(logger, ex.Message);
+                errorMsg = ex.Message;
+                return false;
             }
         }
 
@@ -422,7 +441,7 @@ namespace DlnaLib
                 using (var reader = new StreamReader(response.GetResponseStream()))
                 {
                     var responseXml = reader.ReadToEnd();
-                    var mediaInfo = DlnaLib.PlayMediaInfo.ParseXml(responseXml);
+                    var mediaInfo = Model.PlayMediaInfo.ParseXml(responseXml);
                     return mediaInfo;
                 }
             }
@@ -540,14 +559,15 @@ namespace DlnaLib
             }
         }
 
-        public void PausePlayback()
+        public bool PausePlayback(out string errorMsg)
         {
             try
             {
+                errorMsg = "";
                 if (CurrentDevice == null)
                 {
-                    LogUtils.Error(logger, "暂停播放失败：未选择设备");
-                    return;
+                    errorMsg = "暂停播放失败：未选择设备";
+                    return false;
                 }
                 // 创建HTTP请求
                 var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
@@ -581,22 +601,24 @@ namespace DlnaLib
 
                 LogUtils.Debug(logger, responseText);
 
-                LogUtils.Info(logger, "已暂停播放");
+                return true;
             }
             catch (Exception ex)
             {
-                LogUtils.Error(logger, ex.Message);
+                errorMsg = ex.Message;
+                return false;
             }
         }
 
-        public void ResumePlayback()
+        public bool ResumePlayback(out string errorMsg)
         {
             try
             {
+                errorMsg = "";
                 if (CurrentDevice == null)
                 {
-                    LogUtils.Error(logger, "恢复播放失败：未选择设备");
-                    return;
+                    errorMsg = "继续播放失败：未选择设备";
+                    return false;
                 }
                 // 创建HTTP请求
                 var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
@@ -631,11 +653,12 @@ namespace DlnaLib
 
                 LogUtils.Debug(logger, responseText);
 
-                LogUtils.Info(logger, "已恢复播放");
+                return true;
             }
             catch (Exception ex)
             {
-                LogUtils.Error(logger, ex.Message);
+                errorMsg = ex.Message;
+                return false;
             }
         }
 

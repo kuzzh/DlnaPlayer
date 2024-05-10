@@ -1,9 +1,11 @@
 ﻿using DlnaLib;
+using DlnaLib.Model;
+using DlnaPlayerApp.Utils;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
 
-namespace DlnaPlayerApp
+namespace DlnaPlayerApp.Config
 {
     public sealed class DeviceConfig
     {

@@ -1,14 +1,17 @@
-﻿using log4net.Config;
+﻿using DlnaLib;
+using DlnaPlayerApp.Config;
+using DlnaPlayerApp.Utils;
+using DlnaPlayerApp.WebSocket;
+using log4net.Config;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using WebSocketSharp.Server;
 
 namespace DlnaPlayerApp
 {
     internal static class Program
     {
+        static WebSocketServer wssv;
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -19,7 +22,53 @@ namespace DlnaPlayerApp
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new frmMain());
+
+            try
+            {
+                NginxUtils.StopServer();
+
+                StartWebSocketServer();
+
+                Application.Run(new frmMain());
+            }
+            catch (Exception ex)
+            {
+                string msg = "";
+                GetInnerExceptions(ex, ref msg);
+                MessageBox.Show(msg, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                AppHelper.RemoveControlFile(AppConfig.Default.MediaDir);
+                DlnaManager.Instance.Dispose();
+                NginxUtils.StopServer();
+
+                StopWebSocketServer();
+            }
+        }
+
+        private static void StartWebSocketServer()
+        {
+            wssv = new WebSocketServer(AppConfig.Default.WebSocketPort, false);
+            wssv.AddWebSocketService<WebSocketServerImpl>("/");
+            wssv.Start();
+        }
+
+        private static void StopWebSocketServer()
+        {
+            wssv.Stop();
+        }
+
+        private static void GetInnerExceptions(Exception ex, ref string exceptionMessage)
+        {
+            if (ex == null) {
+                return;
+            }
+            exceptionMessage = $"{exceptionMessage}{Environment.NewLine}{ex.Message}";
+            if (ex.InnerException != null)
+            {
+                GetInnerExceptions(ex.InnerException, ref exceptionMessage);
+            }
         }
     }
 }

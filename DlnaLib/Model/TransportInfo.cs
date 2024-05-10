@@ -2,7 +2,7 @@
 using System.Xml.Linq;
 using System.Xml.XPath;
 
-namespace DlnaLib
+namespace DlnaLib.Model
 {
     public class TransportInfo
     {

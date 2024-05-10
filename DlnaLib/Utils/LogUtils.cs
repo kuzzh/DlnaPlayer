@@ -1,7 +1,7 @@
 ﻿using log4net;
 using System;
 
-namespace DlnaLib
+namespace DlnaLib.Utils
 {
     public static class LogUtils
     {

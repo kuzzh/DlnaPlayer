@@ -3,7 +3,7 @@ using log4net.Core;
 using System;
 using System.Windows.Forms;
 
-namespace DlnaPlayerApp
+namespace DlnaPlayerApp.Utils
 {
     public class LogAppender : AppenderSkeleton
     {

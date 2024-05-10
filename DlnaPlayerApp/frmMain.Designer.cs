@@ -47,6 +47,7 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.btnResume = new System.Windows.Forms.Button();
             this.btnPause = new System.Windows.Forms.Button();
+            this.btnQRCode = new System.Windows.Forms.Button();
             this.contextMenuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -232,11 +233,23 @@
             this.btnPause.UseVisualStyleBackColor = true;
             this.btnPause.Click += new System.EventHandler(this.btnPause_Click);
             // 
+            // btnQRCode
+            // 
+            this.btnQRCode.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnQRCode.Location = new System.Drawing.Point(214, 415);
+            this.btnQRCode.Name = "btnQRCode";
+            this.btnQRCode.Size = new System.Drawing.Size(75, 23);
+            this.btnQRCode.TabIndex = 17;
+            this.btnQRCode.Text = "Web 二维码";
+            this.btnQRCode.UseVisualStyleBackColor = true;
+            this.btnQRCode.Click += new System.EventHandler(this.btnQRCode_Click);
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(746, 678);
+            this.Controls.Add(this.btnQRCode);
             this.Controls.Add(this.btnPause);
             this.Controls.Add(this.btnResume);
             this.Controls.Add(this.groupBox1);
@@ -282,6 +295,7 @@
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.Button btnResume;
         private System.Windows.Forms.Button btnPause;
+        private System.Windows.Forms.Button btnQRCode;
     }
 }
 

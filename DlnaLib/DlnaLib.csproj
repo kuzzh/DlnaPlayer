@@ -46,18 +46,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DeviceFoundEventArgs.cs" />
-    <Compile Include="DevicePropertyChangedEventArgs.cs" />
-    <Compile Include="DlnaDevice.cs" />
+    <Compile Include="Event\DeviceFoundEventArgs.cs" />
+    <Compile Include="Event\DevicePropertyChangedEventArgs.cs" />
+    <Compile Include="Model\DlnaDevice.cs" />
     <Compile Include="DlnaManager.cs" />
-    <Compile Include="EnumTransportState.cs" />
-    <Compile Include="LogUtils.cs" />
-    <Compile Include="PlayMediaInfo.cs" />
-    <Compile Include="PlayPositionInfoEventArgs.cs" />
-    <Compile Include="PlayMediaInfoEventArgs.cs" />
-    <Compile Include="PositionInfo.cs" />
+    <Compile Include="Model\EnumTransportState.cs" />
+    <Compile Include="Utils\LogUtils.cs" />
+    <Compile Include="Model\PlayMediaInfo.cs" />
+    <Compile Include="Event\PlayPositionInfoEventArgs.cs" />
+    <Compile Include="Event\PlayMediaInfoEventArgs.cs" />
+    <Compile Include="Model\PositionInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TransportInfo.cs" />
+    <Compile Include="Model\TransportInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
