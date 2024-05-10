@@ -289,7 +289,7 @@ namespace DlnaPlayerApp
             {
                 Dock = DockStyle.Fill,
                 SizeMode = PictureBoxSizeMode.StretchImage,
-                Image = AppHelper.GenerateQRCodeImage($"{AppHelper.GetWebBaseUrl(DlnaManager.Instance.CurrentDevice.BaseUrl)}/control.html"),
+                Image = AppHelper.GenerateQRCodeImage($"{AppHelper.GetWebBaseUrl(DlnaManager.Instance.CurrentDevice.BaseUrl)}/html/control.html"),
             };
             qrForm.Controls.Add(qrImage);
 

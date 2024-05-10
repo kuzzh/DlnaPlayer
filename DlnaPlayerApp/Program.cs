@@ -39,7 +39,6 @@ namespace DlnaPlayerApp
             }
             finally
             {
-                AppHelper.RemoveControlFile(AppConfig.Default.MediaDir);
                 DlnaManager.Instance.Dispose();
                 NginxUtils.StopServer();
 

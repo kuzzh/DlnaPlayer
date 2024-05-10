@@ -11,14 +11,5 @@ namespace DlnaPlayerApp.Utils
         {
             return Environment.CurrentDirectory;
         }
-
-        public static string GetControlFilePath(string mediaDir)
-        {
-            if (string.IsNullOrEmpty(mediaDir))
-            {
-                return null;
-            }
-            return Path.Combine(mediaDir, "control.html");
-        }
     }
 }

@@ -93,31 +93,5 @@ namespace DlnaPlayerApp.Utils
 
             return Image.FromStream(new MemoryStream(qrCodeImage));
         }
-
-        public static void MakeSureControlFileExist(string mediaDir)
-        {
-            var controlFile = PathUtils.GetControlFilePath(mediaDir);
-            if (string.IsNullOrEmpty(controlFile))
-            {
-                return;
-            }
-            if (!File.Exists(controlFile))
-            {
-                File.WriteAllText(controlFile, Resources.control, Encoding.UTF8);
-            }
-        }
-
-        public static void RemoveControlFile(string mediaDir)
-        {
-            var controLFile = PathUtils.GetControlFilePath(mediaDir);
-            if (string.IsNullOrEmpty(controLFile))
-            {
-                return;
-            }
-            if (File.Exists(controLFile))
-            {
-                File.Delete(controLFile);
-            }
-        }
     }
 }

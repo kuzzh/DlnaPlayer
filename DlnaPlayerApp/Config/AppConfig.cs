@@ -5,16 +5,7 @@ namespace DlnaPlayerApp.Config
 {
     internal class AppConfig
     {
-        private string _mediaDir;
-        public string MediaDir {
-            get { return _mediaDir; }
-            set
-            {
-                AppHelper.RemoveControlFile(_mediaDir);
-                _mediaDir = value;
-                AppHelper.MakeSureControlFileExist(_mediaDir);
-            }
-        }
+        public string MediaDir { get; set; }
         public int HttpPort { get; set; } = 1573;
         public int WebSocketPort { get; set; } = 1574;
         public string LastPlayedFile { get; set; }
