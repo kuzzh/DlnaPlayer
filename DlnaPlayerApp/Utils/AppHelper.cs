@@ -66,10 +66,30 @@ namespace DlnaPlayerApp.Utils
             return $"http://{hostIp}:{AppConfig.Default.HttpPort}";
         }
 
+        public static string BuildCallbackUrl(string baseUrl)
+        {
+            if (!_localIPv4s.TryGetValue(baseUrl, out string hostIp))
+            {
+                var localAddresses = GetLocalIPv4Addresses(baseUrl);
+                if (localAddresses.Count <= 0)
+                {
+                    return string.Empty;
+                }
+                hostIp = localAddresses.First().ToString();
+
+                _localIPv4s[baseUrl] = hostIp;
+            }
+            if (string.IsNullOrEmpty(hostIp))
+            {
+                return string.Empty;
+            }
+            return $"http://{hostIp}:{AppConfig.Default.CallbackPort}{WebServer.RelCallbackUrl}";
+        }
+
         public static string BuildMediaUrl(string filePath, string baseUrl)
         {
             var webBaseUrl = GetWebBaseUrl(baseUrl);
-            
+
             var relFilePath = GetRelativePath(AppConfig.Default.MediaDir, filePath);
 
             return $"{webBaseUrl}/{HttpUtility.UrlEncode(relFilePath)}";
@@ -77,7 +97,7 @@ namespace DlnaPlayerApp.Utils
 
         public static string GetRelativePath(string basePath, string targetPath)
         {
-            return targetPath.Replace(basePath, "/").Replace('\\', '/');
+            return targetPath.Replace(basePath, "").Replace('\\', '/').TrimStart('/');
         }
 
         public static Image GenerateQRCodeImage(string url)

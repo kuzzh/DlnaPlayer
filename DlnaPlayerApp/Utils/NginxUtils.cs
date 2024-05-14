@@ -32,6 +32,8 @@ namespace DlnaPlayerApp.Utils
             process.StartInfo.CreateNoWindow = true; // 隐藏控制台窗口
             process.StartInfo.UseShellExecute = false; // 不使用操作系统shell启动进程
             process.Start();
+
+            process.WaitForExit();
         }
     }
 }

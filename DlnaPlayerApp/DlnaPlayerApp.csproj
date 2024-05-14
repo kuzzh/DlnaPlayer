@@ -81,11 +81,13 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utils\StatusStripRenderer.cs" />
+    <Compile Include="Utils\WebServer.cs" />
     <Compile Include="WebSocket\CommonResponse.cs" />
     <Compile Include="WebSocket\Protocol\PlayStateResponse.cs" />
     <Compile Include="WebSocket\Protocol\VideoItem.cs" />
     <Compile Include="WebSocket\Protocol\WebCmd.cs" />
     <Compile Include="WebSocket\Protocol\WebCmdType.cs" />
+    <Compile Include="WebSocket\WebSocketManager.cs" />
     <Compile Include="WebSocket\WebSocketServerImpl.cs" />
     <EmbeddedResource Include="frmMain.resx">
       <DependentUpon>frmMain.cs</DependentUpon>

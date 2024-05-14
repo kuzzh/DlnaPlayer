@@ -11,20 +11,26 @@
             background-color: #f4f4f4;
             margin: 0;
             padding: 0;
+            overflow: hidden;
         }
 
         .container {
-            width: 95%;
-            margin: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100vh;
             overflow: hidden;
         }
 
         .player {
+            box-sizing: border-box;
             background: #fff;
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            margin-bottom: 15px; /* Reduced margin for mobile */
+            margin: 10px;
             padding: 15px; /* Reduced padding for mobile */
+            width: 600px;
         }
 
         .player-title {
@@ -55,12 +61,16 @@
 
         .playlist {
             list-style: none;
-            padding: 0;
+            padding: 0px;
+            margin: 0px;
+            width: 600px;
+            max-height: calc(100vh - var(--player-div-height, 0px) + 50px);
+            overflow: auto;
         }
 
             .playlist li {
                 background: #e9ecef;
-                margin-bottom: 5px;
+                margin: 5px 10px;
                 padding: 8px 12px;
                 border-radius: 5px;
                 cursor: pointer;
@@ -77,7 +87,7 @@
                 }
 
         .loading {
-            position: absolute;
+            position: fixed;
             top: 0px;
             left: 0px;
             width: 100%;
@@ -122,14 +132,22 @@
             border: 1px solid #fde2e2;
         }
 
+        .no-scroll {
+            overflow: hidden;
+        }
+
         /* Media query for mobile devices */
         @media (max-width: 768px) {
-            .container {
-                width: 95%;
+            .player {
+                width: unset;
             }
 
             .player-title {
                 font-size: 18px;
+            }
+
+            .player-info {
+                font-size: 12px;
             }
 
             .player-controls button {
@@ -137,10 +155,14 @@
                 font-size: 12px;
             }
 
-            .playlist li {
-                padding: 6px 10px;
-                font-size: 14px;
+            .playlist {
+                width: unset;
             }
+
+                .playlist li {
+                    padding: 6px 5px;
+                    font-size: 14px;
+                }
         }
     </style>
 </head>
@@ -155,10 +177,18 @@
                 <button v-on:click="playPrev">上一个</button>
                 <button v-on:click="playNext">下一个</button>
             </div>
-            <div class="player-info" v-if="playState.CurrentVideo">正在播放：{{playState.CurrentVideo.Title}} 播放时长：{{playState.RelTime}}/{{playState.TrackDuration}} 当前设备：{{playState.CurrentDevice}}</div>
+            <div class="player-info" v-if="playState.CurrentVideo">
+                正在播放：
+                <b>{{playState.CurrentVideo.Title}}</b>
+                <br />
+                播放时长：
+                <b>{{playState.RelTime}}/{{playState.TrackDuration}}</b>
+                当前设备：
+                <b>{{playState.CurrentDevice}}</b>
+            </div>
         </div>
-        <ul class="playlist" v-for="videoItem in playState.VideoItems">
-            <li v-on:click="playVideo(videoItem)" v-bind:class="{'active' : playState.CurrentVideo ? videoItem.RelPath === playState.CurrentVideo.RelPath : false}" v-bind:key="videoItem.RelPath">{{videoItem.Title}}</li>
+        <ul class="playlist">
+            <li v-for="videoItem in playState.VideoItems" v-on:click="playVideo(videoItem)" v-bind:class="{'active' : playState.CurrentVideo ? videoItem.RelPath === playState.CurrentVideo.RelPath : false}" v-bind:key="videoItem.RelPath">{{videoItem.Title}}</li>
         </ul>
         <div class="loading" v-if="loadingVisible">
             <div class="loading-circle"></div>
@@ -176,12 +206,26 @@
             el: '#app',
             data: {
                 ws: null,
-                errorMessage: "",
+                connected: false,
+                errorMessage: '',
                 playState: {},
                 loadingVisible: false,
+                reconnectInterval: 2000,
+            },
+            watch: {
+                loadingVisible: function (val) {
+                    if (val) {
+                        document.querySelector('body').classList.add('no-scroll');
+                    } else {
+                        document.querySelector('body').classList.remove('no-scroll');
+                    }
+                },
             },
             methods: {
                 queryPlayState() {
+                    if (!this.ws || !this.connected) {
+                        return;
+                    }
                     var playStateQuery = JSON.stringify({ CmdType: QUERY_PLAY_STATE_CMD });
                     this.ws.send(playStateQuery);
                 },
@@ -193,6 +237,9 @@
                     }, delayTime);
                 },
                 pausePlay() {
+                    if (!this.ws || !this.connected) {
+                        return;
+                    }
                     this.loadingVisible = true;
                     var pausePlayCmd = JSON.stringify({
                         CmdType: PAUSE_PLAY_CMD,
@@ -200,6 +247,9 @@
                     this.ws.send(pausePlayCmd);
                 },
                 resumePlay() {
+                    if (!this.ws || !this.connected) {
+                        return;
+                    }
                     this.loadingVisible = true;
                     var resumePlayCmd = JSON.stringify({
                         CmdType: RESUME_PLAY_CMD,
@@ -207,6 +257,9 @@
                     this.ws.send(resumePlayCmd);
                 },
                 playVideo(videoItem) {
+                    if (!this.ws || !this.connected) {
+                        return;
+                    }
                     this.loadingVisible = true;
                     var playVideoCmd = JSON.stringify({
                         CmdType: PLAY_VIDEO_CMD,
@@ -215,12 +268,18 @@
                     this.ws.send(playVideoCmd);
                 },
                 playPrev() {
+                    if (!this.ws || !this.connected) {
+                        return;
+                    }
                     let prevVideoItem = this.getPrevVideo();
                     if (prevVideoItem) {
                         this.playVideo(prevVideoItem);
                     }
                 },
                 playNext() {
+                    if (!this.ws || !this.connected) {
+                        return;
+                    }
                     let nextVideoItem = this.getNextVideo();
                     if (nextVideoItem) {
                         this.playVideo(nextVideoItem);
@@ -259,55 +318,82 @@
                     }
                     return -1;
                 },
+                connectWebSocket() {
+                    console.log('正在连接WebSocket...');
+                    try {
+                        this.ws = new WebSocket(`ws://${window.location.hostname}:1574/`);
+
+                        let self = this;
+
+                        // 连接成功建立时触发
+                        this.ws.onopen = function () {
+                            self.errorMessage = '';
+                            self.connected = true;
+
+                            self.queryPlayState();
+
+                            console.log('WebSocket连接已打开。');
+                        };
+
+                        // 接收到消息时触发
+                        this.ws.onmessage = function (event) {
+                            self.loadingVisible = false;
+
+                            let response = JSON.parse(event.data);
+                            // console.log('接收到服务端响应:', response);
+
+                            if (response.CmdType != QUERY_PLAY_STATE_CMD) {
+                                self.errorMessage = '';
+                            }
+
+                            if (!response.Success) {
+                                self.errorMessage = response.Message;
+                            } else {
+                                if (response.CmdType == QUERY_PLAY_STATE_CMD) {
+                                    self.playState = response;
+                                }
+                            }
+                        };
+
+                        // 发生错误时触发
+                        this.ws.onerror = function (error) {
+                            self.loadingVisible = false;
+                            console.error('WebSocket发生错误:', error);
+
+                            // window.alert(`WebSocket发生错误: ${error}`);
+                            self.errorMessage = `WebSocket发生错误: ${error}`;
+                        };
+
+                        // 连接关闭时触发
+                        this.ws.onclose = function () {
+                            console.log('WebSocket连接已关闭。');
+
+                            self.ws = null;
+                            self.connected = false;
+                            self.errorMessage = '已与服务端断开连接';
+
+                            // 断线重连
+                            setTimeout(function () {
+                                console.log('尝试重新连接WebSocket...');
+                                self.connectWebSocket();
+                            }, self.reconnectInterval);
+                        };
+                    } catch (error) {
+                        console.log(error);
+                    }
+                },
+                updateMaxHeight() {
+                    const playerDiv = document.querySelector('.player');
+                    const playlistDiv = document.querySelector('.playlist');
+                    const playerDivHeight = playerDiv.clientHeight;
+                    playlistDiv.style.setProperty('--player-div-height', playerDivHeight + 'px');
+                },
             },
             created() {
-                let self = this;
-                // 创建一个新的WebSocket连接
-                self.ws = new WebSocket(`ws://${window.location.hostname}:1574/`);
-
-                // 连接成功建立时触发
-                self.ws.onopen = function () {
-                    console.log('WebSocket连接已打开。');
-
-                    self.startQueryPlayStateTimer(0);
-                };
-
-                // 接收到消息时触发
-                self.ws.onmessage = function (event) {
-                    self.loadingVisible = false;
-
-                    let response = JSON.parse(event.data);
-                    // console.log('接收到服务端响应:', response);
-
-                    if (response.CmdType != QUERY_PLAY_STATE_CMD) {
-                        self.errorMessage = "";
-                    }
-
-                    if (!response.Success) {
-                        // window.alert(response.Message);
-                        self.errorMessage = response.Message;
-                    } else {
-                        if (response.CmdType == QUERY_PLAY_STATE_CMD) {
-                            self.playState = response;
-                        }
-                    }
-                };
-
-                // 发生错误时触发
-                self.ws.onerror = function (error) {
-                    self.loadingVisible = false;
-                    console.error('WebSocket发生错误:', error);
-
-                    // window.alert(`WebSocket发生错误: ${error}`);
-                    self.errorMessage = `WebSocket发生错误: ${error}`;
-                };
-
-                // 连接关闭时触发
-                self.ws.onclose = function () {
-                    console.log('WebSocket连接已关闭。');
-
-                    self.errorMessage = "已与服务端断开连接";
-                };
+                this.connectWebSocket();
+                this.startQueryPlayStateTimer();
+                this.updateMaxHeight();
+                window.addEventListener('resize', this.updateMaxHeight);
             },
         });
     </script>

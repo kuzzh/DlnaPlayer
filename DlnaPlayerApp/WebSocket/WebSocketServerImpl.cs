@@ -18,7 +18,7 @@ namespace DlnaPlayerApp.WebSocket
     {
         private static ILog logger = LogManager.GetLogger(typeof(WebSocketServerImpl));
 
-        private readonly PlayStateResponse _playStateResponse = new PlayStateResponse();
+        private static readonly PlayStateResponse _playStateResponse = new PlayStateResponse();
 
         public WebSocketServerImpl()
         {
@@ -82,9 +82,7 @@ namespace DlnaPlayerApp.WebSocket
             }
             else
             {
-                var videoUrl = AppHelper.BuildMediaUrl(videoItem.RelPath, DlnaManager.Instance.CurrentDevice.BaseUrl);
-                var success = DlnaManager.Instance.SendVideoToDLNA(videoUrl, out string errorMsg);
-
+                var success = frmMain.MainForm.PlayVideo(videoItem.RelPath, out string errorMsg);
                 commonResponse.Success = success;
                 commonResponse.Message = errorMsg;
             }

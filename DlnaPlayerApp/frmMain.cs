@@ -4,6 +4,7 @@ using DlnaLib.Model;
 using DlnaLib.Utils;
 using DlnaPlayerApp.Config;
 using DlnaPlayerApp.Utils;
+using DlnaPlayerApp.WebSocket;
 using DlnaPlayerApp.WebSocket.Protocol;
 using log4net;
 using QRCoder;
@@ -11,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Net;
 using System.Security.Policy;
 using System.Text;
 using System.Threading;
@@ -85,21 +87,35 @@ namespace DlnaPlayerApp
         {
             base.OnLoad(e);
 
-            tbMediaDir.Text = AppConfig.Default.MediaDir;
-
-            LoadPlaylist(AppConfig.Default.MediaDir, true);
-
-            if (DeviceConfig.Default.Devices.Count <= 0)
+            try
             {
-                btnDiscoverDevices.PerformClick();
-            }
-            else
-            {
-                foreach (var device in DeviceConfig.Default.Devices)
+                NginxUtils.StopServer();
+                NginxUtils.StartServer();
+                WebSocketManager.Start();
+                WebServer.Instance.Start(IPAddress.Any, AppConfig.Default.CallbackPort, 100, "");
+
+                tbMediaDir.Text = AppConfig.Default.MediaDir;
+
+                LoadPlaylist(AppConfig.Default.MediaDir, true);
+
+                if (DeviceConfig.Default.Devices.Count <= 0)
                 {
-                    AddDevice(device, false);
+                    btnDiscoverDevices.PerformClick();
                 }
-                cbCurrentDevice.SelectedItem = DeviceConfig.Default.CurrentDevice ?? DeviceConfig.Default.Devices[0];
+                else
+                {
+                    foreach (var device in DeviceConfig.Default.Devices)
+                    {
+                        AddDevice(device, false);
+                    }
+                    cbCurrentDevice.SelectedItem = DeviceConfig.Default.CurrentDevice ?? DeviceConfig.Default.Devices[0];
+                }
+            }
+            catch (Exception ex)
+            {
+                string msg = "";
+                GetInnerExceptions(ex, ref msg);
+                MessageBox.Show(msg, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -110,6 +126,11 @@ namespace DlnaPlayerApp
                 e.Cancel = true;
                 return;
             }
+            DlnaManager.Instance.Dispose();
+            NginxUtils.StopServer();
+            WebServer.Instance.Stop();
+            WebSocketManager.Stop();
+
             base.OnFormClosing(e);
         }
 
@@ -125,11 +146,13 @@ namespace DlnaPlayerApp
             DlnaManager.Instance.DiscoverDLNADevices();
         }
 
-        private void cbCurrentDevice_SelectedIndexChanged(object sender, EventArgs e)
+        private async void cbCurrentDevice_SelectedIndexChanged(object sender, EventArgs e)
         {
             DlnaManager.Instance.CurrentDevice = (DlnaDevice)cbCurrentDevice.SelectedItem;
             DeviceConfig.Default.CurrentDevice = (DlnaDevice)cbCurrentDevice.SelectedItem;
             DeviceConfig.Default.SaveConfig();
+
+            //await DlnaManager.Instance.SubscribeToAVTransportEvents(AppHelper.BuildCallbackUrl(DlnaManager.Instance.CurrentDevice.BaseUrl));
         }
 
         private void btnSelectDir_Click(object sender, EventArgs e)
@@ -280,18 +303,32 @@ namespace DlnaPlayerApp
 
             var qrForm = new Form
             {
-                Text = "Web 二维码",
+                Text = "扫码手机访问",
                 Size = new Size(400, 400),
                 StartPosition = FormStartPosition.CenterParent
             };
 
+            var url = $"{AppHelper.GetWebBaseUrl(DlnaManager.Instance.CurrentDevice.BaseUrl)}/html/control.html";
             var qrImage = new PictureBox
             {
                 Dock = DockStyle.Fill,
                 SizeMode = PictureBoxSizeMode.StretchImage,
-                Image = AppHelper.GenerateQRCodeImage($"{AppHelper.GetWebBaseUrl(DlnaManager.Instance.CurrentDevice.BaseUrl)}/html/control.html"),
+                Image = AppHelper.GenerateQRCodeImage(url),
             };
             qrForm.Controls.Add(qrImage);
+
+            var label = new Label
+            {
+                Text = url,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Dock = DockStyle.Bottom
+            };
+            label.MouseDoubleClick += (sender1, e1) =>
+            {
+                Clipboard.SetText(label.Text);
+                MessageBox.Show("复制成功！", "提示");
+            };
+            qrForm.Controls.Add(label);
 
             qrForm.ShowDialog(this);
         }

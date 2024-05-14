@@ -236,11 +236,11 @@
             // btnQRCode
             // 
             this.btnQRCode.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnQRCode.Location = new System.Drawing.Point(214, 415);
+            this.btnQRCode.Location = new System.Drawing.Point(200, 415);
             this.btnQRCode.Name = "btnQRCode";
-            this.btnQRCode.Size = new System.Drawing.Size(75, 23);
+            this.btnQRCode.Size = new System.Drawing.Size(89, 23);
             this.btnQRCode.TabIndex = 17;
-            this.btnQRCode.Text = "Web 二维码";
+            this.btnQRCode.Text = "扫码手机访问";
             this.btnQRCode.UseVisualStyleBackColor = true;
             this.btnQRCode.Click += new System.EventHandler(this.btnQRCode_Click);
             // 

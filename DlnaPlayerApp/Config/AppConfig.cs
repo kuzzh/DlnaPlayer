@@ -8,6 +8,7 @@ namespace DlnaPlayerApp.Config
         public string MediaDir { get; set; }
         public int HttpPort { get; set; } = 1573;
         public int WebSocketPort { get; set; } = 1574;
+        public int CallbackPort { get; set; } = 1575;
         public string LastPlayedFile { get; set; }
         public string LastPlayedDevice { get; set; }
 
@@ -36,6 +37,10 @@ namespace DlnaPlayerApp.Config
             {
                 WebSocketPort = wsPort;
             }
+            if (int.TryParse(ConfigurationManager.AppSettings[nameof(CallbackPort)], out int callbackPort))
+            {
+                CallbackPort = callbackPort;
+            }
             LastPlayedFile = ConfigurationManager.AppSettings[nameof(LastPlayedFile)];
             LastPlayedDevice = ConfigurationManager.AppSettings[nameof(LastPlayedDevice)];
         }
@@ -49,6 +54,7 @@ namespace DlnaPlayerApp.Config
             ModifyValue(config, nameof(MediaDir), MediaDir);
             ModifyValue(config, nameof(HttpPort), HttpPort.ToString());
             ModifyValue(config, nameof(WebSocketPort), WebSocketPort.ToString());
+            ModifyValue(config, nameof(CallbackPort), CallbackPort.ToString());
             ModifyValue(config, nameof(LastPlayedFile), LastPlayedFile);
             ModifyValue(config, nameof(LastPlayedDevice), LastPlayedDevice);
 

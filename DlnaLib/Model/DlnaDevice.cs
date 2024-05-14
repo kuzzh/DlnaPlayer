@@ -17,6 +17,7 @@ namespace DlnaLib.Model
         public string DeviceName { get; set; }
         public string DeviceLocation { get; set; }
         public string ControlUrl { get; set; }
+        public string EventSubURL { get; set; }
         public string BaseUrl { get; set; }
         /// <summary>
         /// 用户期待的状态，目前有三种：PLAYING、PAUSED_PLAYBACK、NO_MEDIA_PRESENT
@@ -28,7 +29,7 @@ namespace DlnaLib.Model
 
         public DlnaDevice()
         {
-                
+
         }
 
         public DlnaDevice(string deviceLocation)
@@ -53,10 +54,15 @@ namespace DlnaLib.Model
                 // 这里仅作示例，你需要根据实际情况进行解析
                 DeviceName = GetDeviceNameFromDescriptionXml(descriptionXml);
                 DeviceId = GetDeviceIdFromDescriptionXml(descriptionXml);
-                var relativeControlUrl = GetControlUrlFromDescriptionXml(descriptionXml);
-                if (relativeControlUrl != null)
+                var relControlUrl = GetControlUrlFromDescriptionXml(descriptionXml);
+                if (relControlUrl != null)
                 {
-                    ControlUrl = $"{BaseUrl}/{relativeControlUrl}";
+                    ControlUrl = $"{BaseUrl}/{relControlUrl}";
+                }
+                var relEventSubUrl = GetEventSubUrlFromDescriptionXml(descriptionXml);
+                if (relEventSubUrl != null)
+                {
+                    EventSubURL = $"{BaseUrl}/{relEventSubUrl}";
                 }
             }
             catch (Exception ex)
@@ -118,6 +124,36 @@ namespace DlnaLib.Model
                     if (controlURLNodes != null && controlURLNodes.Count() > 0)
                     {
                         return controlURLNodes.ElementAt(0).Value;
+                    }
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                LogUtils.Error(logger, ex.Message);
+                return null;
+            }
+        }
+
+        private static string GetEventSubUrlFromDescriptionXml(string xml)
+        {
+            try
+            {
+                // 查找包含服务类型为 AVTransport 的 service 节点
+                XDocument doc = XDocument.Parse(xml);
+                XNamespace ns = "urn:schemas-upnp-org:device-1-0";
+
+                var serviceNodes = doc.Descendants(ns + "service")
+                    .Where(s => s.Element(ns + "serviceType").Value == "urn:schemas-upnp-org:service:AVTransport:1");
+
+                foreach (XElement serviceNode in serviceNodes)
+                {
+                    // 获取控制URL
+                    var eventSubURLNodes = serviceNode.Descendants(ns + "eventSubURL");
+                    if (eventSubURLNodes != null && eventSubURLNodes.Count() > 0)
+                    {
+                        return eventSubURLNodes.ElementAt(0).Value;
                     }
                 }
 

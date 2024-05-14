@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using DlnaLib.Event;
 using DlnaLib.Model;
 using DlnaLib.Utils;
+using System.Net.Http;
+using System.Security.Policy;
 
 namespace DlnaLib
 {
@@ -86,15 +88,15 @@ namespace DlnaLib
                     if (positionInfo.Track <= 0 && positionInfo.RelTimeSpan >= positionInfo.TrackDurationSpan)
                     {
                         // 距离上次自动播放视频不足15秒忽略，针对播放广告的情况
-                        if ((DateTime.Now - _lastSendVideoToDLNATime).TotalSeconds < 15)
-                        {
-                            LogUtils.Warn(logger, "距离上次自动播放不足 15 秒，忽略本次自动播放");
-                            return;
-                        }
-                        LogUtils.Info(logger, $"Track={positionInfo.Track} RelTime={positionInfo.RelTime} TrackDuration={positionInfo.TrackDuration}");
-                        PlayNext?.Invoke(this, new EventArgs());
+                        //if ((DateTime.Now - _lastSendVideoToDLNATime).TotalSeconds < 20)
+                        //{
+                        //    LogUtils.Warn(logger, "距离上次自动播放不足 20 秒，忽略本次自动播放");
+                        //    return;
+                        //}
+                        //LogUtils.Info(logger, $"Track={positionInfo.Track} RelTime={positionInfo.RelTime} TrackDuration={positionInfo.TrackDuration}");
+                        //PlayNext?.Invoke(this, new EventArgs());
 
-                        _lastSendVideoToDLNATime = DateTime.Now;
+                        //_lastSendVideoToDLNATime = DateTime.Now;
                     }
                     //else if (transportInfo.CurrentTransportState != CurrentDevice.ExpectState)
                     //{
@@ -205,6 +207,62 @@ namespace DlnaLib
                     LogUtils.Error(logger, ex.Message);
                 }
             }
+        }
+
+        // Method to get the last SID used for subscription
+        private string _lastSubscribeSID;
+        public string LastSubscribeSID => _lastSubscribeSID;
+        public async Task SubscribeToAVTransportEvents(string callbackUrl)
+        {
+            if (CurrentDevice == null)
+            {
+                return;
+            }
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.ConnectionClose = true;
+                var request = new HttpRequestMessage(HttpMethod.Post, CurrentDevice.EventSubURL)
+                {
+                    Content = new StringContent("") // Content-Length: 0
+                };
+                //request.Headers.Host = "192.168.1.70";
+                request.Headers.Add("CALLBACK", $"<{callbackUrl}>");
+                request.Headers.Add("NT", "upnp:event");
+                request.Headers.Add("TIMEOUT", "Second-36000");
+
+                try
+                {
+                    var response = await client.SendAsync(request);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var responseContent = await response.Content.ReadAsStringAsync();
+                        Console.WriteLine("Subscribed successfully: " + responseContent);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Subscribe failed, Status Code: " + response.StatusCode);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Exception occurred: " + ex.Message);
+                }
+            }
+        }
+
+        private string CreateSubscribeRequest(string callbackUrl)
+        {
+            // 构造订阅请求的SOAP消息体
+            return "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n" +
+                   "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" " +
+                   "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\r\n" +
+                   "  <s:Body>\r\n" +
+                   "    <u:Subscribe xmlns:u=\"urn:schemas-upnp-org:service:AVTransport:1\">\r\n" +
+                   $"      <Callback URL=\"{callbackUrl}\"></Callback>\r\n" +
+                   "      <Timeout>Second-300</Timeout>\r\n" +
+                   "    </u:Subscribe>\r\n" +
+                   "  </s:Body>\r\n" +
+                   "</s:Envelope>";
         }
 
         public bool SendVideoToDLNA(string videoUrl, out string errorMsg)

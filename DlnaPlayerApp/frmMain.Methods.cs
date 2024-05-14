@@ -17,6 +17,7 @@ using DlnaPlayerApp.Config;
 using DlnaLib.Event;
 using DlnaLib.Model;
 using DlnaLib.Utils;
+using System.Windows.Documents;
 
 namespace DlnaPlayerApp
 {
@@ -117,6 +118,40 @@ namespace DlnaPlayerApp
             return _videoItems;
         }
 
+        public bool PlayVideo(string relPath, out string errorMsg)
+        {
+            List<string> relPaths;
+            if (InvokeRequired)
+            {
+                relPaths = (List<string>)lvPlaylist.Invoke(new Func<List<string>>(() =>
+                {
+                    var list = new List<string>();
+                    foreach (ListViewItem item in lvPlaylist.Items)
+                    {
+                        list.Add(AppHelper.GetRelativePath(AppConfig.Default.MediaDir, item.Tag.ToString()));
+                    }
+                    return list;
+                }));
+            }
+            else
+            {
+                relPaths = new List<string>();
+                foreach (ListViewItem item in lvPlaylist.Items)
+                {
+                    relPaths.Add(AppHelper.GetRelativePath(AppConfig.Default.MediaDir, item.Tag.ToString()));
+                }
+            }
+            for (var i = 0; i < relPaths.Count; i++)
+            {
+                if (relPaths[i] == relPath)
+                {
+                    _currentPlayIndex = i - 1;
+                    break;
+                }
+            }
+            return PlayNext(out errorMsg);
+        }
+
         private void OnPlayNext(object sender, EventArgs e)
         {
             if (InvokeRequired)
@@ -124,51 +159,64 @@ namespace DlnaPlayerApp
                 BeginInvoke(new Action(() => OnPlayNext(sender, e)));
                 return;
             }
+            _waitForm.Show(this, () =>
+            {
+                var success = PlayNext(out string errorMsg);
+                if (!success)
+                {
+                    LogUtils.Error(logger, errorMsg);
+                }
+            });
+        }
+
+        private bool PlayNext(out string errorMsg)
+        {
+            errorMsg = "";
+
             _currentPlayIndex++;
 
             if (_currentPlayIndex >= lvPlaylist.Items.Count)
             {
                 _currentPlayIndex = 0;
             }
-            var playItem = lvPlaylist.Items[_currentPlayIndex];
+            var playItem = InvokeRequired ? (ListViewItem)lvPlaylist.Invoke(new Func<ListViewItem>(() => lvPlaylist.Items[_currentPlayIndex])) : lvPlaylist.Items[_currentPlayIndex];
 
-            _waitForm.Show(this, () =>
+            if (lvPlaylist.Items.Count <= 0)
             {
-                if (lvPlaylist.Items.Count <= 0)
-                {
-                    LogUtils.Warn(logger, "播放媒体文件失败，播放列表为空");
-                    return;
-                }
-                if (DlnaManager.Instance.CurrentDevice == null)
-                {
-                    LogUtils.Warn(logger, "播放媒体文件失败，未选择播放设备");
-                    return;
-                }
+                errorMsg = "播放媒体文件失败，播放列表为空";
+                return false;
+            }
+            if (DlnaManager.Instance.CurrentDevice == null)
+            {
+                errorMsg = "播放媒体文件失败，未选择播放设备";
+                return false;
+            }
 
-                var nextFileUrl = AppHelper.BuildMediaUrl(playItem.Tag.ToString(), DlnaManager.Instance.CurrentDevice.BaseUrl);
-                if (!DlnaManager.Instance.SendVideoToDLNA(nextFileUrl, out string errorMsg))
+            var nextFileUrl = AppHelper.BuildMediaUrl(playItem.Tag.ToString(), DlnaManager.Instance.CurrentDevice.BaseUrl);
+            if (!DlnaManager.Instance.SendVideoToDLNA(nextFileUrl, out errorMsg))
+            {
+                return false;
+            }
+            else
+            {
+                DlnaManager.Instance.CurrentDevice.ExpectState = EnumTransportState.PLAYING;
+                DeviceConfig.Default.SaveConfig();
+
+                BeginInvoke(new Action(() =>
                 {
-                    LogUtils.Error(logger, errorMsg);
-                }
-                else
-                {
-                    DlnaManager.Instance.CurrentDevice.ExpectState = EnumTransportState.PLAYING;
-                    DeviceConfig.Default.SaveConfig();
+                    playItem.Selected = true;
+                    playItem.Focused = true;
+                    lvPlaylist.Select();
 
-                    BeginInvoke(new Action(() =>
-                    {
-                        playItem.Selected = true;
-                        playItem.Focused = true;
-                        lvPlaylist.Select();
+                    ResetListViewItemForeColor();
+                }));
 
-                        ResetListViewItemForeColor();
-                    }));
+                AppConfig.Default.LastPlayedDevice = DlnaManager.Instance.CurrentDevice.DeviceName;
+                AppConfig.Default.LastPlayedFile = playItem.Tag.ToString();
+                AppConfig.Default.SaveConfig();
 
-                    AppConfig.Default.LastPlayedDevice = DlnaManager.Instance.CurrentDevice.DeviceName;
-                    AppConfig.Default.LastPlayedFile = playItem.Tag.ToString();
-                    AppConfig.Default.SaveConfig();
-                }
-            });
+                return true;
+            }
         }
 
         private void OnPlayPositionInfo(object sender, PlayPositionInfoEventArgs e)
@@ -275,6 +323,19 @@ namespace DlnaPlayerApp
                 ImageSize = new Size(1, height)
             };
             lvPlaylist.SmallImageList = imgList;
+        }
+
+        private static void GetInnerExceptions(Exception ex, ref string exceptionMessage)
+        {
+            if (ex == null)
+            {
+                return;
+            }
+            exceptionMessage = $"{exceptionMessage}{Environment.NewLine}{ex.Message}";
+            if (ex.InnerException != null)
+            {
+                GetInnerExceptions(ex.InnerException, ref exceptionMessage);
+            }
         }
     }
 }
