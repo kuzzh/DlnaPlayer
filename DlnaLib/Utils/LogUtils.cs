@@ -7,19 +7,19 @@ namespace DlnaLib.Utils
     {
         public static void Debug(ILog logger, string message, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
         {
-            logger?.Debug($"[{caller}] {message}");
+            logger?.Debug($"[{caller}]{message}");
         }
         public static void Info(ILog logger, string message, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
         {
-            logger?.Info($"[{caller}] {message}");
+            logger?.Info($"[{caller}]{message}");
         }
         public static void Warn(ILog logger, string message, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
         {
-            logger?.Warn($"[{caller}] {message}");
+            logger?.Warn($"[{caller}]{message}");
         }
         public static void Error(ILog logger, string message, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
         {
-            logger?.Error($"[{caller}] {message}");
+            logger?.Error($"[{caller}]{message}");
         }
 
         public static void Error(ILog logger, Exception exception)

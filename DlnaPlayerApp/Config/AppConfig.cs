@@ -9,8 +9,7 @@ namespace DlnaPlayerApp.Config
         public int HttpPort { get; set; } = 1573;
         public int WebSocketPort { get; set; } = 1574;
         public int CallbackPort { get; set; } = 1575;
-        public string LastPlayedFile { get; set; }
-        public string LastPlayedDevice { get; set; }
+        public LastPlayedInfo LastPlayedInfo { get; set; } = new LastPlayedInfo();
 
         private static AppConfig _default;
         public static AppConfig Default
@@ -41,8 +40,10 @@ namespace DlnaPlayerApp.Config
             {
                 CallbackPort = callbackPort;
             }
-            LastPlayedFile = ConfigurationManager.AppSettings[nameof(LastPlayedFile)];
-            LastPlayedDevice = ConfigurationManager.AppSettings[nameof(LastPlayedDevice)];
+
+            LastPlayedInfo.LastPlayedFile = ConfigurationManager.AppSettings[nameof(LastPlayedInfo.LastPlayedFile)];
+            LastPlayedInfo.LastPlayedTime = ConfigurationManager.AppSettings[nameof(LastPlayedInfo.LastPlayedTime)];
+            LastPlayedInfo.LastPlayedDevice = ConfigurationManager.AppSettings[nameof(LastPlayedInfo.LastPlayedDevice)];
         }
 
         public void SaveConfig()
@@ -55,8 +56,9 @@ namespace DlnaPlayerApp.Config
             ModifyValue(config, nameof(HttpPort), HttpPort.ToString());
             ModifyValue(config, nameof(WebSocketPort), WebSocketPort.ToString());
             ModifyValue(config, nameof(CallbackPort), CallbackPort.ToString());
-            ModifyValue(config, nameof(LastPlayedFile), LastPlayedFile);
-            ModifyValue(config, nameof(LastPlayedDevice), LastPlayedDevice);
+            ModifyValue(config, nameof(LastPlayedInfo.LastPlayedFile), LastPlayedInfo.LastPlayedFile);
+            ModifyValue(config, nameof(LastPlayedInfo.LastPlayedTime), LastPlayedInfo.LastPlayedTime);
+            ModifyValue(config, nameof(LastPlayedInfo.LastPlayedDevice), LastPlayedInfo.LastPlayedDevice);
 
             // 保存配置更改
             config.Save(ConfigurationSaveMode.Modified);
@@ -77,5 +79,12 @@ namespace DlnaPlayerApp.Config
                 config.AppSettings.Settings.Add(key, value);
             }
         }
+    }
+
+    internal class LastPlayedInfo
+    {
+        public string LastPlayedFile { get; set; }
+        public string LastPlayedTime { get; set; }
+        public string LastPlayedDevice { get; set; }
     }
 }

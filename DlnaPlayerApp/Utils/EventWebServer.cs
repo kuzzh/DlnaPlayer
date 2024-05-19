@@ -9,16 +9,19 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using DlnaLib;
+using DlnaLib.DlnaEvent;
+using DlnaLib.Event;
 using DlnaLib.Utils;
 using log4net;
 
 namespace DlnaPlayerApp
 {
-    public sealed class WebServer
+    public sealed class EventWebServer
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(WebServer));
+        private static readonly ILog logger = LogManager.GetLogger(typeof(EventWebServer));
 
-        private static readonly WebServer mInst = new WebServer();
+        private static readonly EventWebServer mInst = new EventWebServer();
 
         private bool _running = false; // Is it running?
 
@@ -45,13 +48,19 @@ namespace DlnaPlayerApp
             { "zip", "application/zip"}
         };
 
+        // 前一个收到的 DLNA 事件
+        private DlnaEventBase _prevDlnaEvent;
+
         public static string RelCallbackUrl = "/dlna/callback";
 
-        private WebServer()
+        public event EventHandler PlayNext;
+        public event EventHandler<PlayStateChangedEventArgs> PlayStateChanged;
+
+        private EventWebServer()
         {
         }
 
-        public static WebServer Instance
+        public static EventWebServer Instance
         {
             get { return mInst; }
         }
@@ -73,7 +82,7 @@ namespace DlnaPlayerApp
                 _running = true;
                 this._contentPath = contentPath;
 
-                logger.InfoFormat("Web 服务已启动，正在监听端口：{0}", port);
+                logger.InfoFormat("事件回调服务器已启动，正在监听端口：{0}", port);
             }
             catch (Exception ex)
             {
@@ -141,7 +150,7 @@ namespace DlnaPlayerApp
                     _serverSocket.Dispose();
                     _serverSocket = null;
 
-                    LogUtils.Info(logger, "Web 服务已停止");
+                    LogUtils.Info(logger, "事件回调服务器已停止");
                 }
                 catch (Exception ex)
                 {
@@ -156,14 +165,99 @@ namespace DlnaPlayerApp
             int receivedBCount = clientSocket.Receive(buffer); // Receive the request
             string strReceived = _charEncoder.GetString(buffer, 0, receivedBCount);
 
+            LogUtils.Debug(logger, strReceived);
+
             // Parse method of the request
-            string httpMethod = strReceived.Substring(0, strReceived.IndexOf(" "));
+            //string httpMethod = strReceived.Substring(0, strReceived.IndexOf(" "));
 
-            int start = strReceived.IndexOf(httpMethod) + httpMethod.Length + 1;
-            int length = strReceived.LastIndexOf("HTTP") - start - 1;
-            string requestedUrl = strReceived.Substring(start, length);
+            //int start = strReceived.IndexOf(httpMethod) + httpMethod.Length + 1;
+            //int length = strReceived.LastIndexOf("HTTP") - start - 1;
+            //string requestedUrl = strReceived.Substring(start, length);
 
+            // 解析Content-Length和sid
+            string[] headerLines = strReceived.Split(new[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+            int contentLength = 0;
+            string sid = string.Empty;
+            foreach (var line in headerLines)
+            {
+                if (line.StartsWith("Content-Length:", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    contentLength = int.Parse(line.Substring(line.IndexOf(':') + 1).Trim());
+                }
+                else if (line.StartsWith("SID:", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    sid = line.Substring(line.IndexOf(":") + 1).Trim();
+                }
+            }
+
+            if (DlnaManager.Instance.CurrentDevice == null || 
+                sid != DlnaManager.Instance.CurrentDevice.SID ||
+                contentLength <= 0)
+            {
+                return;
+            }
+
+            if (strReceived.Contains("\r\n\r\n"))
+            {
+                var xml = strReceived.Substring(strReceived.IndexOf("\r\n\r\n") + 4);
+                if (xml.Length <= 0)
+                {
+                    receivedBCount = clientSocket.Receive(buffer);
+                    if (receivedBCount > 0)
+                    {
+                        xml = _charEncoder.GetString(buffer, 0, receivedBCount);
+                    }
+                }
+                xml = WebUtility.HtmlDecode(xml);
+
+                LogUtils.Debug(logger, xml);
+
+                DlnaEventBase dlnaEvent = DlnaPlayStateEvent.ParseXml(sid, xml);
+                if (dlnaEvent == null)
+                {
+                    dlnaEvent = DlnaPlayTrackChangedEvent.ParseXml(sid, xml);
+                }
+                if (dlnaEvent is DlnaPlayStateEvent dlnaPlayStateEvent)
+                {
+                    PlayStateChanged?.Invoke(this, new PlayStateChangedEventArgs(dlnaPlayStateEvent.TransportState));
+                    // 自然播放结束，继续播放下一集
+                    if (dlnaPlayStateEvent.TransportState == DlnaLib.Model.EnumTransportState.STOPPED &&
+                        _prevDlnaEvent is DlnaPlayTrackChangedEvent dlnaPlayTrackChangedEvent &&
+                        dlnaPlayTrackChangedEvent.IsPlayingFinished())
+                    {
+                        PlayNext?.Invoke(this, EventArgs.Empty);
+                    }
+                }
+                _prevDlnaEvent = dlnaEvent;
+            }
             
+
+            //receivedBCount = clientSocket.Receive(buffer);
+            //if (receivedBCount > 0)
+            //{
+            //    strReceived = WebUtility.HtmlDecode(_charEncoder.GetString(buffer, 0, receivedBCount));
+            //    LogUtils.Debug(logger, strReceived);
+
+            //    DlnaEventBase dlnaEvent = DlnaPlayStateEvent.ParseXml(sid, strReceived);
+            //    if (dlnaEvent == null)
+            //    {
+            //        dlnaEvent = DlnaPlayTrackChangedEvent.ParseXml(sid, strReceived);
+            //    }
+            //    if (dlnaEvent is DlnaPlayStateEvent dlnaPlayStateEvent)
+            //    {
+            //        PlayStateChanged?.Invoke(this, new PlayStateChangedEventArgs(dlnaPlayStateEvent.TransportState));
+            //        // 自然播放结束，继续播放下一集
+            //        if (dlnaPlayStateEvent.TransportState == DlnaLib.Model.EnumTransportState.STOPPED &&
+            //            _prevDlnaEvent is DlnaPlayTrackChangedEvent dlnaPlayTrackChangedEvent &&
+            //            dlnaPlayTrackChangedEvent.IsPlayingFinished())
+            //        {
+            //            PlayNext?.Invoke(this, EventArgs.Empty);
+            //        }
+            //    }
+            //    _prevDlnaEvent = dlnaEvent;
+            //}
+
+            sendOkResponse(clientSocket, new byte[0], "text/html; charset=\"utf-8\"");
         }
 
         private byte[] GetBytes(IDataReader reader)

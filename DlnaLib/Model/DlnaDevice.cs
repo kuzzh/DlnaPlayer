@@ -1,5 +1,6 @@
 ﻿using DlnaLib.Utils;
 using log4net;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,13 +20,19 @@ namespace DlnaLib.Model
         public string ControlUrl { get; set; }
         public string EventSubURL { get; set; }
         public string BaseUrl { get; set; }
-        /// <summary>
-        /// 用户期待的状态，目前有三种：PLAYING、PAUSED_PLAYBACK、NO_MEDIA_PRESENT
-        /// </summary>
-        public EnumTransportState ExpectState { get; set; } = EnumTransportState.NO_MEDIA_PRESENT;
         public bool SupportGetMediaInfo { get; set; } = true;
         public bool SupportGetTransportInfo { get; set; } = true;
         public bool SupportGetPositionInfo { get; set; } = true;
+
+        // 订阅事件成功后返回的事件编号
+        [JsonIgnore]
+        public string SID { get; set; }
+        [JsonIgnore]
+        public bool IsSubscribedEvents { get; set; } = false;
+        [JsonIgnore]
+        public string CurrentTrackURI { get; set; }
+        [JsonIgnore]
+        public EnumTransportState State { get; set; }
 
         public DlnaDevice()
         {

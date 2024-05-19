@@ -37,6 +37,9 @@ namespace DlnaPlayerApp
 
         private readonly List<VideoItem> _videoItems = new List<VideoItem>();
 
+        // 上一个播放的 ListViewItem
+        private ListViewItem _prevPlayingListViewItem;
+
         private ListViewItem SelectedItem
         {
             get
@@ -65,17 +68,58 @@ namespace DlnaPlayerApp
             lblCurrentMediaInfo.Spring = true;
             statusStrip1.Renderer = new StatusStripRenderer();
 
-            if (!string.IsNullOrEmpty(AppConfig.Default.LastPlayedFile) &&
-                !string.IsNullOrEmpty(AppConfig.Default.LastPlayedDevice))
+            if (!string.IsNullOrEmpty(AppConfig.Default.LastPlayedInfo.LastPlayedFile) &&
+                !string.IsNullOrEmpty(AppConfig.Default.LastPlayedInfo.LastPlayedDevice) &&
+                !string.IsNullOrEmpty(AppConfig.Default.LastPlayedInfo.LastPlayedTime))
             {
-                lblCurrentMediaInfo.Text = $"上次播放：{Path.GetFileName(AppConfig.Default.LastPlayedFile)} 播放设备：{AppConfig.Default.LastPlayedDevice}";
+                lblCurrentMediaInfo.Text = $"{AppConfig.Default.LastPlayedInfo.LastPlayedFile} {AppConfig.Default.LastPlayedInfo.LastPlayedTime} {AppConfig.Default.LastPlayedInfo.LastPlayedDevice}";
             }
+
+            btnPlayOrPause.Enabled = false;
+            btnStop.Enabled = false;
 
             DlnaManager.Instance.DeviceFound += OnDeviceFound;
             DlnaManager.Instance.DiscoverFinished += OnDiscoverFinished;
             DlnaManager.Instance.PlayPositionInfo += OnPlayPositionInfo;
-            DlnaManager.Instance.PlayNext += OnPlayNext;
             DlnaManager.Instance.DevicePropertyChanged += OnDevicePropertyChanged;
+            EventWebServer.Instance.PlayNext += OnPlayNext;
+            EventWebServer.Instance.PlayStateChanged += OnPlayStateChanged;
+        }
+
+        private void OnPlayStateChanged(object sender, PlayStateChangedEventArgs e)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => OnPlayStateChanged(sender, e)));
+                return;
+            }
+            DlnaManager.Instance.CurrentDevice.State = e.State;
+
+            if (e.State == EnumTransportState.PLAYING)
+            {
+                cbCurrentDevice.Enabled = false;
+                btnDiscoverDevices.Enabled = false;
+                btnPlayOrPause.Text = "暂停";
+                btnPlayOrPause.Enabled = true;
+                btnStop.Enabled = true;
+            }
+            else if (e.State == EnumTransportState.PAUSED ||
+                e.State == EnumTransportState.PAUSED_PLAYBACK)
+            {
+                cbCurrentDevice.Enabled = false;
+                btnDiscoverDevices.Enabled = false;
+                btnPlayOrPause.Text = "播放";
+                btnPlayOrPause.Enabled = true;
+                btnStop.Enabled = true;
+            }
+            else if (e.State == EnumTransportState.STOPPED)
+            {
+                cbCurrentDevice.Enabled = true;
+                btnDiscoverDevices.Enabled = true;
+                btnPlayOrPause.Text = "播放";
+                btnPlayOrPause.Enabled = false;
+                btnStop.Enabled = false;
+            }
         }
 
         private void OnDevicePropertyChanged(object sender, DevicePropertyChangedEventArgs e)
@@ -92,7 +136,7 @@ namespace DlnaPlayerApp
                 NginxUtils.StopServer();
                 NginxUtils.StartServer();
                 WebSocketManager.Start();
-                WebServer.Instance.Start(IPAddress.Any, AppConfig.Default.CallbackPort, 100, "");
+                EventWebServer.Instance.Start(IPAddress.Any, AppConfig.Default.CallbackPort, 100, "");
 
                 tbMediaDir.Text = AppConfig.Default.MediaDir;
 
@@ -128,14 +172,18 @@ namespace DlnaPlayerApp
             }
             DlnaManager.Instance.Dispose();
             NginxUtils.StopServer();
-            WebServer.Instance.Stop();
+            EventWebServer.Instance.Stop();
             WebSocketManager.Stop();
 
             base.OnFormClosing(e);
         }
 
-        private void btnDiscoverDevices_Click(object sender, EventArgs e)
+        private async void btnDiscoverDevices_Click(object sender, EventArgs e)
         {
+            foreach (var dlnaDevice in _dlnaDevices)
+            {
+                await DlnaManager.UnsubscribeAVTransportEventsAsync(dlnaDevice);
+            }
             _dlnaDevices.Clear();
             cbCurrentDevice.Items.Clear();
             DeviceConfig.Default.Devices.Clear();
@@ -148,11 +196,13 @@ namespace DlnaPlayerApp
 
         private async void cbCurrentDevice_SelectedIndexChanged(object sender, EventArgs e)
         {
-            DlnaManager.Instance.CurrentDevice = (DlnaDevice)cbCurrentDevice.SelectedItem;
-            DeviceConfig.Default.CurrentDevice = (DlnaDevice)cbCurrentDevice.SelectedItem;
+            var currentDevice = (DlnaDevice)cbCurrentDevice.SelectedItem;
+
+            DlnaManager.Instance.CurrentDevice = currentDevice;
+            DeviceConfig.Default.CurrentDevice = currentDevice;
             DeviceConfig.Default.SaveConfig();
 
-            //await DlnaManager.Instance.SubscribeToAVTransportEvents(AppHelper.BuildCallbackUrl(DlnaManager.Instance.CurrentDevice.BaseUrl));
+            await DlnaManager.SubscribeAVTransportEvents(currentDevice, AppHelper.BuildCallbackUrl(currentDevice.BaseUrl));
         }
 
         private void btnSelectDir_Click(object sender, EventArgs e)
@@ -173,6 +223,11 @@ namespace DlnaPlayerApp
             }
         }
 
+        private void 播放ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            lvPlaylist_MouseDoubleClick(null, null);
+        }
+
         private void 复制链接ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (lvPlaylist.SelectedItems.Count <= 0 || DlnaManager.Instance.CurrentDevice == null)
@@ -189,38 +244,36 @@ namespace DlnaPlayerApp
             Clipboard.SetText(mediaLinkBuilder.ToString());
         }
 
-        private void btnPlayToDevice_Click(object sender, EventArgs e)
+        private void btnPlayOrPause_Click(object sender, EventArgs e)
         {
             _waitForm.Show(this, () =>
             {
                 try
                 {
-                    if (lvPlaylist.Items.Count <= 0)
-                    {
-                        LogUtils.Warn(logger, "播放媒体文件失败，播放列表为空");
-                        return;
-                    }
-
                     if (DlnaManager.Instance.CurrentDevice == null)
                     {
-                        LogUtils.Warn(logger, "播放媒体文件失败，未选择播放设备");
+                        LogUtils.Warn(logger, "操作失败，未选择设备");
                         return;
                     }
-
-                    if (SelectedItem != null)
+                    if (DlnaManager.Instance.CurrentDevice.State == EnumTransportState.PAUSED ||
+                        DlnaManager.Instance.CurrentDevice.State == EnumTransportState.PAUSED_PLAYBACK)
                     {
-                        _currentPlayIndex = SelectedItem.Index - 1;
+                        if (!DlnaManager.Instance.ResumePlayback(out string errorMsg))
+                        {
+                            LogUtils.Error(logger, $"播放失败：{errorMsg}");
+                        }
                     }
-                    else
+                    else if (DlnaManager.Instance.CurrentDevice.State == EnumTransportState.PLAYING)
                     {
-                        _currentPlayIndex = -1;
+                        if (!DlnaManager.Instance.PausePlayback(out string errorMsg))
+                        {
+                            LogUtils.Error(logger, $"暂停失败：{errorMsg}");
+                        }
                     }
-
-                    OnPlayNext(sender, EventArgs.Empty);
                 }
                 catch (Exception ex)
                 {
-                    LogUtils.Error(logger, $"播放失败：{ex.Message}");
+                    LogUtils.Error(logger, $"操作失败：{ex.Message}");
                 }
             });
         }
@@ -251,44 +304,18 @@ namespace DlnaPlayerApp
             LoadPlaylist(AppConfig.Default.MediaDir, false);
         }
 
-        private void btnResume_Click(object sender, EventArgs e)
+        private void btnStop_Click(object sender, EventArgs e)
         {
             if (DlnaManager.Instance.CurrentDevice == null)
             {
-                LogUtils.Error(logger, "继续播放失败，未选择设备");
+                LogUtils.Error(logger, "停止播放失败，未选择设备");
                 return;
             }
             _waitForm.Show(this, () =>
             {
-                if (!DlnaManager.Instance.ResumePlayback(out string errorMsg))
+                if (!DlnaManager.Instance.StopPlayback(out string errorMsg))
                 {
                     LogUtils.Error(logger, errorMsg);
-                }
-                else
-                {
-                    DlnaManager.Instance.CurrentDevice.ExpectState = EnumTransportState.PLAYING;
-                    DeviceConfig.Default.SaveConfig();
-                }
-            });
-        }
-
-        private void btnPause_Click(object sender, EventArgs e)
-        {
-            if (DlnaManager.Instance.CurrentDevice == null)
-            {
-                LogUtils.Error(logger, "暂停播放失败，未选择设备");
-                return;
-            }
-            _waitForm.Show(this, () =>
-            {
-                if (!DlnaManager.Instance.PausePlayback(out string errorMsg))
-                {
-                    LogUtils.Error(logger, errorMsg);
-                }
-                else
-                {
-                    DlnaManager.Instance.CurrentDevice.ExpectState = EnumTransportState.PAUSED_PLAYBACK;
-                    DeviceConfig.Default.SaveConfig();
                 }
             });
         }

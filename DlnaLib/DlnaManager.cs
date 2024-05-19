@@ -10,15 +10,13 @@ using System.Threading.Tasks;
 using DlnaLib.Event;
 using DlnaLib.Model;
 using DlnaLib.Utils;
-using System.Net.Http;
-using System.Security.Policy;
 
 namespace DlnaLib
 {
     public sealed class DlnaManager : IDisposable
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DlnaManager));
-        private const int PLAY_STATE_QUERY_INTERVAL = 2000;
+        private const int PLAY_STATE_QUERY_INTERVAL = 1000;
 
         private Thread _findDeviceThread;
         private bool disposedValue;
@@ -29,11 +27,8 @@ namespace DlnaLib
 
         private Timer _playStateQueryTimer;
 
-        private DateTime _lastSendVideoToDLNATime = DateTime.MinValue;
-
         public event EventHandler<DeviceFoundEventArgs> DeviceFound;
         public event EventHandler<EventArgs> DiscoverFinished;
-        public event EventHandler<EventArgs> PlayNext;
         public event EventHandler<PlayMediaInfoEventArgs> PlayMediaInfo;
         public event EventHandler<PlayPositionInfoEventArgs> PlayPositionInfo;
         public event EventHandler<DevicePropertyChangedEventArgs> DevicePropertyChanged;
@@ -76,40 +71,15 @@ namespace DlnaLib
                 TransportInfo transportInfo = null;
                 if (CurrentDevice.SupportGetPositionInfo)
                 {
-                    positionInfo = GetPositionInfo(CurrentDevice.ControlUrl);
+                    positionInfo = GetPositionInfo();
+                    if (positionInfo != null)
+                    {
+                        CurrentDevice.CurrentTrackURI = positionInfo.TrackURI;
+                    }
                 }
                 if (CurrentDevice.SupportGetTransportInfo)
                 {
-                    transportInfo = GetTransportInfo(CurrentDevice.ControlUrl);
-                }
-
-                if (positionInfo != null && transportInfo != null)
-                {
-                    if (positionInfo.Track <= 0 && positionInfo.RelTimeSpan >= positionInfo.TrackDurationSpan)
-                    {
-                        // 距离上次自动播放视频不足15秒忽略，针对播放广告的情况
-                        //if ((DateTime.Now - _lastSendVideoToDLNATime).TotalSeconds < 20)
-                        //{
-                        //    LogUtils.Warn(logger, "距离上次自动播放不足 20 秒，忽略本次自动播放");
-                        //    return;
-                        //}
-                        //LogUtils.Info(logger, $"Track={positionInfo.Track} RelTime={positionInfo.RelTime} TrackDuration={positionInfo.TrackDuration}");
-                        //PlayNext?.Invoke(this, new EventArgs());
-
-                        //_lastSendVideoToDLNATime = DateTime.Now;
-                    }
-                    //else if (transportInfo.CurrentTransportState != CurrentDevice.ExpectState)
-                    //{
-                    //    if (CurrentDevice.ExpectState == EnumTransportState.PLAYING)
-                    //    {
-                    //        logger.Info($"CurrentDevice.ExpectState={CurrentDevice.ExpectState} CurrentTransportState={transportInfo.CurrentTransportState}");
-                    //        ResumePlayback();
-                    //    }
-                    //    else if (CurrentDevice.ExpectState == EnumTransportState.PAUSED_PLAYBACK)
-                    //    {
-                    //        PausePlayback();
-                    //    }
-                    //}
+                    transportInfo = GetTransportInfo();
                 }
 
                 PlayPositionInfo?.Invoke(this, new PlayPositionInfoEventArgs(CurrentDevice, positionInfo, transportInfo));
@@ -209,60 +179,88 @@ namespace DlnaLib
             }
         }
 
-        // Method to get the last SID used for subscription
-        private string _lastSubscribeSID;
-        public string LastSubscribeSID => _lastSubscribeSID;
-        public async Task SubscribeToAVTransportEvents(string callbackUrl)
+        public static async Task SubscribeAVTransportEvents(DlnaDevice dlnaDevice, string callbackUrl)
         {
-            if (CurrentDevice == null)
+            await Task.Factory.StartNew(() =>
             {
-                return;
-            }
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.ConnectionClose = true;
-                var request = new HttpRequestMessage(HttpMethod.Post, CurrentDevice.EventSubURL)
+                if (dlnaDevice == null)
                 {
-                    Content = new StringContent("") // Content-Length: 0
-                };
-                //request.Headers.Host = "192.168.1.70";
-                request.Headers.Add("CALLBACK", $"<{callbackUrl}>");
-                request.Headers.Add("NT", "upnp:event");
-                request.Headers.Add("TIMEOUT", "Second-36000");
+                    return;
+                }
+
+                if (dlnaDevice.IsSubscribedEvents)
+                {
+                    return;
+                }
+
+                var request = WebRequest.Create(new Uri(dlnaDevice.EventSubURL)) as HttpWebRequest;
+                request.Method = "SUBSCRIBE";
+                request.UserAgent = "DlnaPlayer/1.0";
+                request.Headers["CALLBACK"] = $"<{callbackUrl}>";
+                request.Headers["NT"] = "upnp:event";
+                request.Headers["TIMEOUT"] = "Second-360000";
 
                 try
                 {
-                    var response = await client.SendAsync(request);
-                    if (response.IsSuccessStatusCode)
+                    var requestStream = request.GetRequestStream();
+                    var response = request.GetResponse() as HttpWebResponse;
+                    if (response.StatusCode == HttpStatusCode.OK)
                     {
-                        var responseContent = await response.Content.ReadAsStringAsync();
-                        Console.WriteLine("Subscribed successfully: " + responseContent);
+                        dlnaDevice.IsSubscribedEvents = true;
+                        dlnaDevice.SID = response.Headers["SID"].ToString();
+                        LogUtils.Info(logger, "Subscribe dlna events success");
                     }
                     else
                     {
-                        Console.WriteLine("Subscribe failed, Status Code: " + response.StatusCode);
+                        LogUtils.Error(logger, "Subscribe dlna events failed, Status Code: " + response.StatusCode);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Exception occurred: " + ex.Message);
+                    LogUtils.Error(logger, ex.Message);
                 }
-            }
+            });
         }
 
-        private string CreateSubscribeRequest(string callbackUrl)
+        public static async Task UnsubscribeAVTransportEventsAsync(DlnaDevice dlnaDevice)
         {
-            // 构造订阅请求的SOAP消息体
-            return "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n" +
-                   "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" " +
-                   "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\r\n" +
-                   "  <s:Body>\r\n" +
-                   "    <u:Subscribe xmlns:u=\"urn:schemas-upnp-org:service:AVTransport:1\">\r\n" +
-                   $"      <Callback URL=\"{callbackUrl}\"></Callback>\r\n" +
-                   "      <Timeout>Second-300</Timeout>\r\n" +
-                   "    </u:Subscribe>\r\n" +
-                   "  </s:Body>\r\n" +
-                   "</s:Envelope>";
+            await Task.Factory.StartNew(() =>
+            {
+                if (dlnaDevice == null)
+                {
+                    return;
+                }
+
+                if (!dlnaDevice.IsSubscribedEvents)
+                {
+                    return;
+                }
+
+                var request = WebRequest.Create(new Uri(dlnaDevice.EventSubURL)) as HttpWebRequest;
+                request.Method = "UNSUBSCRIBE ";
+                request.UserAgent = "DlnaPlayer/1.0";
+                request.Headers["SID"] = dlnaDevice.SID;
+
+                try
+                {
+                    var requestStream = request.GetRequestStream();
+                    var response = request.GetResponse() as HttpWebResponse;
+                    if (response.StatusCode == HttpStatusCode.OK)
+                    {
+                        dlnaDevice.IsSubscribedEvents = false;
+                        dlnaDevice.SID = string.Empty;
+                        LogUtils.Info(logger, "Unsubscribe dlna events success");
+                    }
+                    else
+                    {
+                        LogUtils.Error(logger, "Unsubscribe dlna events failed, Status Code: " + response.StatusCode);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogUtils.Error(logger, ex.Message);
+                }
+            });
         }
 
         public bool SendVideoToDLNA(string videoUrl, out string errorMsg)
@@ -270,6 +268,12 @@ namespace DlnaLib
             try
             {
                 errorMsg = "";
+
+                if (CurrentDevice == null)
+                {
+                    errorMsg = "未选择播放设备";
+                    return false;
+                }
 
                 // 创建HTTP请求
                 var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
@@ -297,124 +301,35 @@ namespace DlnaLib
                     stream.Write(byteBody, 0, byteBody.Length);
                 }
 
+                var response = request.GetResponse() as HttpWebResponse;
+                if (response != null && response.StatusCode == HttpStatusCode.OK)
+                {
+                    CurrentDevice.CurrentTrackURI = videoUrl;
+
+                    return true;
+                }
+
                 // 获取响应
-                var responseText = GetResponseText(request);
-
+                var responseText = GetResponseText(response);
                 LogUtils.Debug(logger, responseText);
-
-                return true;
             }
             catch (Exception ex)
             {
                 errorMsg = ex.Message;
-                return false;
             }
+            return false;
         }
 
-        public void SendVideoPlaylistToDLNA(string[] videoUrls)
+        private TransportInfo GetTransportInfo()
         {
             try
             {
+                if (CurrentDevice == null)
+                {
+                    return null;
+                }
                 // 创建HTTP请求
                 var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
-                request.Method = "POST";
-                request.ContentType = "text/xml; charset=\"utf-8\"";
-                request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI\"");
-
-                // 构建播放列表
-                var playlistBuilder = new StringBuilder();
-                foreach (string videoUrl in videoUrls)
-                {
-                    playlistBuilder.Append($"<DIDL-Lite xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\" xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\"><item><res protocolInfo=\"http-get:*:video/mp4:*\" duration=\"INFINITY\" bitrate=\"0\" resolution=\"0x0\" size=\"0\"{videoUrl}</res></item></DIDL-Lite>");
-                }
-
-                var playlistXml = playlistBuilder.ToString();
-
-                // 发送播放列表
-                var body = $@"<?xml version=""1.0""?>
-                            <s:Envelope xmlns:s=""http://schemas.xmlsoap.org/soap/envelope/"" s:encodingStyle=""http://schemas.xmlsoap.org/soap/encoding/"">
-                                <s:Body>
-                                    <u:SetAVTransportURI xmlns:u=""urn:schemas-upnp-org:service:AVTransport:1"">
-                                        <InstanceID>0</InstanceID>
-                                        <CurrentURI>{playlistXml}</CurrentURI>
-                                        <CurrentURIMetaData></CurrentURIMetaData>
-                                    </u:SetAVTransportURI>
-                                </s:Body>
-                            </s:Envelope>";
-
-                var byteBody = Encoding.UTF8.GetBytes(body);
-                request.ContentLength = byteBody.Length;
-
-                using (var stream = request.GetRequestStream())
-                {
-                    stream.Write(byteBody, 0, byteBody.Length);
-                }
-
-                // 获取响应
-                var response = (HttpWebResponse)request.GetResponse();
-                Console.WriteLine("Video playlist sent successfully to DLNA device.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error sending video playlist to DLNA device: " + ex.Message);
-            }
-        }
-
-        public void SendVideoPlaylistToDLNA2(string[] videoUrls)
-        {
-            try
-            {
-                // 创建HTTP请求
-                var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
-                request.Method = "POST";
-                request.ContentType = "text/xml; charset=utf-8";
-                request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI\"");
-
-                // 构建播放列表XML
-                var playlistBuilder = new StringBuilder();
-                foreach (string videoUrl in videoUrls)
-                {
-                    playlistBuilder.Append($"<item><res protocolInfo=\"http-get:*:video/mp4:*\" duration=\"INFINITY\" bitrate=\"0\" resolution=\"0x0\" size=\"0\">{videoUrl}</res></item>");
-                }
-
-                var playlistXml = playlistBuilder.ToString();
-
-                // 发送播放列表
-                var body = $@"<?xml version=""1.0""?>
-                    <s:Envelope xmlns:s=""http://schemas.xmlsoap.org/soap/envelope/"" s:encodingStyle=""http://schemas.xmlsoap.org/soap/encoding/"">
-                        <s:Body>
-                            <u:SetAVTransportURI xmlns:u=""urn:schemas-upnp-org:service:AVTransport:1"">
-                                <InstanceID>0</InstanceID>
-                                <CurrentURI></CurrentURI>
-                                <CurrentURIMetaData>{playlistXml}</CurrentURIMetaData>
-                            </u:SetAVTransportURI>
-                        </s:Body>
-                    </s:Envelope>";
-
-                var byteBody = Encoding.UTF8.GetBytes(body);
-                request.ContentLength = byteBody.Length;
-
-                using (var stream = request.GetRequestStream())
-                {
-                    stream.Write(byteBody, 0, byteBody.Length);
-                }
-
-                // 获取响应
-                var response = (HttpWebResponse)request.GetResponse();
-                Console.WriteLine("Video playlist sent successfully to DLNA device.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error sending video playlist to DLNA device: " + ex.Message);
-            }
-        }
-
-        private TransportInfo GetTransportInfo(string controlUrl)
-        {
-            try
-            {
-                // 创建HTTP请求
-                var request = (HttpWebRequest)WebRequest.Create(controlUrl);
                 request.Method = "POST";
                 request.ContentType = "text/xml; charset=utf-8";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#GetTransportInfo\"");
@@ -443,6 +358,10 @@ namespace DlnaLib
                 {
                     var responseXml = reader.ReadToEnd();
                     var transportInfo = TransportInfo.ParseXml(responseXml);
+                    if (transportInfo != null)
+                    {
+                        CurrentDevice.State = transportInfo.CurrentTransportState;
+                    }
                     return transportInfo;
                 }
             }
@@ -466,12 +385,16 @@ namespace DlnaLib
             return null; // 默认情况下假定视频未完成播放
         }
 
-        private PlayMediaInfo GetMediaInfo(string controlUrl)
+        private PlayMediaInfo GetMediaInfo()
         {
             try
             {
+                if (CurrentDevice == null)
+                {
+                    return null;
+                }
                 // 创建HTTP请求
-                var request = (HttpWebRequest)WebRequest.Create(controlUrl);
+                var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
                 request.ContentType = "text/xml; charset=utf-8";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#GetMediaInfo\"");
@@ -523,12 +446,16 @@ namespace DlnaLib
             return null;
         }
 
-        private PositionInfo GetPositionInfo(string controlUrl)
+        private PositionInfo GetPositionInfo()
         {
             try
             {
+                if (CurrentDevice == null)
+                {
+                    return null;
+                }
                 // 创建HTTP请求
-                var request = (HttpWebRequest)WebRequest.Create(controlUrl);
+                var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
                 request.ContentType = "text/xml; charset=utf-8";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#GetPositionInfo\"");
@@ -578,12 +505,19 @@ namespace DlnaLib
             return null;
         }
 
-        public void StartPlayback(string controlUrl)
+        public bool StartPlayback(out string errorMsg)
         {
             try
             {
+                errorMsg = "";
+
+                if (CurrentDevice != null)
+                {
+                    errorMsg = "开始播放失败：未选择设备";
+                    return false;
+                }
                 // 创建HTTP请求
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(controlUrl);
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
                 request.ContentType = "text/xml; charset=\"utf-8\"";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#Play\"");
@@ -609,12 +543,18 @@ namespace DlnaLib
 
                 // 获取响应
                 HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-                Console.WriteLine("Playback started successfully.");
+
+                if (response != null && response.StatusCode == HttpStatusCode.OK)
+                {
+                    return true;
+                }
+                errorMsg = GetResponseText(response);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error starting playback: " + ex.Message);
+                errorMsg = ex.Message;
             }
+            return false;
         }
 
         public bool PausePlayback(out string errorMsg)
@@ -654,18 +594,18 @@ namespace DlnaLib
                 // 获取响应
                 var response = (HttpWebResponse)request.GetResponse();
 
+                if (response != null && response.StatusCode == HttpStatusCode.OK)
+                {
+                    return true;
+                }
                 // 获取响应
-                var responseText = GetResponseText(request);
-
-                LogUtils.Debug(logger, responseText);
-
-                return true;
+                errorMsg = GetResponseText(response);
             }
             catch (Exception ex)
             {
                 errorMsg = ex.Message;
-                return false;
             }
+            return false;
         }
 
         public bool ResumePlayback(out string errorMsg)
@@ -706,26 +646,33 @@ namespace DlnaLib
                 // 获取响应
                 var response = (HttpWebResponse)request.GetResponse();
 
+                if (response != null && response.StatusCode == HttpStatusCode.OK)
+                {
+                    return true;
+                }
                 // 获取响应
-                var responseText = GetResponseText(request);
-
-                LogUtils.Debug(logger, responseText);
-
-                return true;
+                errorMsg = GetResponseText(response);
             }
             catch (Exception ex)
             {
                 errorMsg = ex.Message;
-                return false;
             }
+            return false;
         }
 
-        public void StopPlayback(string controlUrl)
+        public bool StopPlayback(out string errorMsg)
         {
             try
             {
+                errorMsg = "";
+
+                if (CurrentDevice == null)
+                {
+                    errorMsg = "停止播放失败：未选择设备";
+                    return false;
+                }
                 // 创建HTTP请求
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(controlUrl);
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
                 request.ContentType = "text/xml; charset=\"utf-8\"";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#Stop\"");
@@ -749,30 +696,37 @@ namespace DlnaLib
                 }
 
                 // 获取响应
-                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-                Console.WriteLine("Playback stopped successfully.");
+                var response = (HttpWebResponse)request.GetResponse();
+                if (response != null && response.StatusCode == HttpStatusCode.OK)
+                {
+                    return true;
+                }
+
+                errorMsg = GetResponseText(response);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error stopping playback: " + ex.Message);
+                errorMsg = ex.Message;
             }
+            return false;
         }
 
-        private static string GetResponseText(HttpWebRequest request)
+        private static string GetResponseText(HttpWebResponse response)
         {
-            using (var response = (HttpWebResponse)request.GetResponse())
+            if (response == null)
             {
-                using (var responseStream = response.GetResponseStream())
+                return "HttpWebResponse is null";
+            }
+            using (var responseStream = response.GetResponseStream())
+            {
+                using (var memoryStream = new MemoryStream())
                 {
-                    using (var memoryStream = new MemoryStream())
-                    {
-                        responseStream.CopyTo(memoryStream);
+                    responseStream.CopyTo(memoryStream);
 
-                        var responseBytes = memoryStream.ToArray();
-                        var responseText = Encoding.UTF8.GetString(responseBytes);
+                    var responseBytes = memoryStream.ToArray();
+                    var responseText = Encoding.UTF8.GetString(responseBytes);
 
-                        return responseText;
-                    }
+                    return responseText;
                 }
             }
         }

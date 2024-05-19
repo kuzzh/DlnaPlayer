@@ -10,14 +10,12 @@ using System.Web;
 using System.Windows.Forms;
 using System.Threading;
 using System.Linq;
-using DlnaPlayerApp.Properties;
 using DlnaPlayerApp.WebSocket.Protocol;
 using DlnaPlayerApp.Utils;
 using DlnaPlayerApp.Config;
 using DlnaLib.Event;
 using DlnaLib.Model;
 using DlnaLib.Utils;
-using System.Windows.Documents;
 
 namespace DlnaPlayerApp
 {
@@ -173,12 +171,14 @@ namespace DlnaPlayerApp
         {
             errorMsg = "";
 
-            _currentPlayIndex++;
-
             if (_currentPlayIndex >= lvPlaylist.Items.Count)
             {
-                _currentPlayIndex = 0;
+                errorMsg = "已播放到最后一集";
+                return false;
             }
+
+            _currentPlayIndex++;
+
             var playItem = InvokeRequired ? (ListViewItem)lvPlaylist.Invoke(new Func<ListViewItem>(() => lvPlaylist.Items[_currentPlayIndex])) : lvPlaylist.Items[_currentPlayIndex];
 
             if (lvPlaylist.Items.Count <= 0)
@@ -199,21 +199,12 @@ namespace DlnaPlayerApp
             }
             else
             {
-                DlnaManager.Instance.CurrentDevice.ExpectState = EnumTransportState.PLAYING;
-                DeviceConfig.Default.SaveConfig();
-
                 BeginInvoke(new Action(() =>
                 {
                     playItem.Selected = true;
                     playItem.Focused = true;
                     lvPlaylist.Select();
-
-                    ResetListViewItemForeColor();
                 }));
-
-                AppConfig.Default.LastPlayedDevice = DlnaManager.Instance.CurrentDevice.DeviceName;
-                AppConfig.Default.LastPlayedFile = playItem.Tag.ToString();
-                AppConfig.Default.SaveConfig();
 
                 return true;
             }
@@ -229,16 +220,31 @@ namespace DlnaPlayerApp
 
             if (e.TransportInfo == null || e.PositionInfo == null)
             {
-                lblCurrentMediaInfo.Text = $"设备[{e.CurrentDevice.DeviceName}]播放状态：未知";
+                //LogUtils.Info(logger, $"设备[{e.CurrentDevice.DeviceName}]播放状态：未知");
                 return;
             }
-            ResetListViewItemForeColor();
+
+            OnPlayStateChanged(this, new PlayStateChangedEventArgs(e.TransportInfo.CurrentTransportState));
+
             var listViewItem = FindListViewItem(e.PositionInfo.TrackURI);
             if (listViewItem != null)
             {
-                listViewItem.ForeColor = Color.Red;
+                if (_prevPlayingListViewItem != listViewItem)
+                {
+                    if (_prevPlayingListViewItem != null)
+                    {
+                        _prevPlayingListViewItem.ForeColor = Color.Black;
+                    }
+                    listViewItem.ForeColor = Color.Red;
+                    _prevPlayingListViewItem = listViewItem;
+                }
             }
-            lblCurrentMediaInfo.Text = $"播放设备：{e.CurrentDevice.DeviceName} 正在播放：{Path.GetFileName(HttpUtility.UrlDecode(e.PositionInfo.TrackURI))} {e.PositionInfo.RelTime}/{e.PositionInfo.TrackDuration}";
+            lblCurrentMediaInfo.Text = $"{Path.GetFileName(HttpUtility.UrlDecode(e.PositionInfo.TrackURI))} {e.PositionInfo.RelTime}/{e.PositionInfo.TrackDuration} {e.CurrentDevice.DeviceName}";
+
+            AppConfig.Default.LastPlayedInfo.LastPlayedDevice = DlnaManager.Instance.CurrentDevice.DeviceName;
+            AppConfig.Default.LastPlayedInfo.LastPlayedFile = Path.GetFileName(HttpUtility.UrlDecode(e.PositionInfo.TrackURI));
+            AppConfig.Default.LastPlayedInfo.LastPlayedTime = $"{e.PositionInfo.RelTime}/{e.PositionInfo.TrackDuration}";
+            AppConfig.Default.SaveConfig();
         }
 
         private ListViewItem FindListViewItem(string videoUrl)

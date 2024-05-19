@@ -83,7 +83,7 @@ namespace DlnaPlayerApp.Utils
             {
                 return string.Empty;
             }
-            return $"http://{hostIp}:{AppConfig.Default.CallbackPort}{WebServer.RelCallbackUrl}";
+            return $"http://{hostIp}:{AppConfig.Default.CallbackPort}{EventWebServer.RelCallbackUrl}";
         }
 
         public static string BuildMediaUrl(string filePath, string baseUrl)

@@ -1,0 +1,94 @@
+NOTIFY /dlna/callback HTTP/1.1
+HOST: 192.168.1.248:1575
+CONTENT-TYPE: text/xml; charset="utf-8"
+CONTENT-LENGTH: 219
+NT: upnp:event
+NTS: upnp:propchange
+SID: uuid:d39920f2-1dd1-11b2-a073-d28b5f21bc1d
+SEQ: 0
+
+
+<e:propertyset xmlns:e="urn:schemas-upnp-org:event-1-0">
+<e:property>
+<LastChange><Event xmlns = "urn:schemas-upnp-org:metadata-1-0/AVT/"></Event></LastChange>
+</e:property>
+</e:propertyset>
+
+NOTIFY /dlna/callback HTTP/1.1
+HOST: 192.168.1.248:1575
+CONTENT-TYPE: text/xml; charset="utf-8"
+CONTENT-LENGTH: 364
+NT: upnp:event
+NTS: upnp:propchange
+SID: uuid:d39920f2-1dd1-11b2-a073-d28b5f21bc1d
+SEQ: 1
+
+<e:propertyset xmlns:e="urn:schemas-upnp-org:event-1-0">
+<e:property>
+<LastChange><Event xmlns = "urn:schemas-upnp-org:metadata-1-0/AVT/"><InstanceID val="0"><TransportState val="PLAYING"/><TransportStatus val="OK"/></InstanceID></Event></LastChange>
+</e:property>
+</e:propertyset>
+
+NOTIFY /dlna/callback HTTP/1.1
+HOST: 192.168.1.248:1575
+CONTENT-TYPE: text/xml; charset="utf-8"
+CONTENT-LENGTH: 372
+NT: upnp:event
+NTS: upnp:propchange
+SID: uuid:d39920f2-1dd1-11b2-a073-d28b5f21bc1d
+SEQ: 2
+
+
+<e:propertyset xmlns:e="urn:schemas-upnp-org:event-1-0">
+<e:property>
+<LastChange><Event xmlns = "urn:schemas-upnp-org:metadata-1-0/AVT/"><InstanceID val="0"><TransportState val="PAUSED_PLAYBACK"/><TransportStatus val="OK"/></InstanceID></Event></LastChange>
+</e:property>
+</e:propertyset>
+
+NOTIFY /dlna/callback HTTP/1.1
+HOST: 192.168.1.248:1575
+CONTENT-TYPE: text/xml; charset="utf-8"
+CONTENT-LENGTH: 364
+NT: upnp:event
+NTS: upnp:propchange
+SID: uuid:d39920f2-1dd1-11b2-a073-d28b5f21bc1d
+SEQ: 3
+
+
+<e:propertyset xmlns:e="urn:schemas-upnp-org:event-1-0">
+<e:property>
+<LastChange><Event xmlns = "urn:schemas-upnp-org:metadata-1-0/AVT/"><InstanceID val="0"><TransportState val="PLAYING"/><TransportStatus val="OK"/></InstanceID></Event></LastChange>
+</e:property>
+</e:propertyset>
+
+NOTIFY /dlna/callback HTTP/1.1
+HOST: 192.168.1.248:1575
+CONTENT-TYPE: text/xml; charset="utf-8"
+CONTENT-LENGTH: 466
+NT: upnp:event
+NTS: upnp:propchange
+SID: uuid:d39920f2-1dd1-11b2-a073-d28b5f21bc1d
+SEQ: 4
+
+
+<e:propertyset xmlns:e="urn:schemas-upnp-org:event-1-0">
+<e:property>
+<LastChange><Event xmlns = "urn:schemas-upnp-org:metadata-1-0/AVT/"><InstanceID val="0"><NumberOfTracks  val="1"/><CurrentTrack  val="1"/><CurrentMediaDuration  val="00:00:00"/><CurrentTrackDuration  val="00:00:00"/></InstanceID></Event></LastChange>
+</e:property>
+</e:propertyset>
+
+NOTIFY /dlna/callback HTTP/1.1
+HOST: 192.168.1.248:1575
+CONTENT-TYPE: text/xml; charset="utf-8"
+CONTENT-LENGTH: 364
+NT: upnp:event
+NTS: upnp:propchange
+SID: uuid:d39920f2-1dd1-11b2-a073-d28b5f21bc1d
+SEQ: 5
+
+
+<e:propertyset xmlns:e="urn:schemas-upnp-org:event-1-0">
+<e:property>
+<LastChange><Event xmlns = "urn:schemas-upnp-org:metadata-1-0/AVT/"><InstanceID val="0"><TransportState val="STOPPED"/><TransportStatus val="OK"/></InstanceID></Event></LastChange>
+</e:property>
+</e:propertyset>

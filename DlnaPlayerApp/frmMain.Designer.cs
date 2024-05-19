@@ -30,7 +30,7 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmMain));
-            this.btnPlayToDevice = new System.Windows.Forms.Button();
+            this.btnPlayOrPause = new System.Windows.Forms.Button();
             this.tbMediaDir = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.btnSelectDir = new System.Windows.Forms.Button();
@@ -45,24 +45,25 @@
             this.btnClearLog = new System.Windows.Forms.Button();
             this.btnRefreshPlaylist = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.btnResume = new System.Windows.Forms.Button();
-            this.btnPause = new System.Windows.Forms.Button();
+            this.btnStop = new System.Windows.Forms.Button();
             this.btnQRCode = new System.Windows.Forms.Button();
+            this.播放ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.contextMenuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
-            // btnPlayToDevice
+            // btnPlayOrPause
             // 
-            this.btnPlayToDevice.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnPlayToDevice.Location = new System.Drawing.Point(457, 414);
-            this.btnPlayToDevice.Name = "btnPlayToDevice";
-            this.btnPlayToDevice.Size = new System.Drawing.Size(75, 23);
-            this.btnPlayToDevice.TabIndex = 8;
-            this.btnPlayToDevice.Text = "播放到设备";
-            this.btnPlayToDevice.UseVisualStyleBackColor = true;
-            this.btnPlayToDevice.Click += new System.EventHandler(this.btnPlayToDevice_Click);
+            this.btnPlayOrPause.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnPlayOrPause.Location = new System.Drawing.Point(457, 414);
+            this.btnPlayOrPause.Name = "btnPlayOrPause";
+            this.btnPlayOrPause.Size = new System.Drawing.Size(75, 23);
+            this.btnPlayOrPause.TabIndex = 8;
+            this.btnPlayOrPause.Text = "播放";
+            this.btnPlayOrPause.UseVisualStyleBackColor = true;
+            this.btnPlayOrPause.Click += new System.EventHandler(this.btnPlayOrPause_Click);
             // 
             // tbMediaDir
             // 
@@ -113,14 +114,16 @@
             // contextMenuStrip1
             // 
             this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.播放ToolStripMenuItem,
+            this.toolStripSeparator1,
             this.复制链接ToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(125, 26);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(181, 76);
             // 
             // 复制链接ToolStripMenuItem
             // 
             this.复制链接ToolStripMenuItem.Name = "复制链接ToolStripMenuItem";
-            this.复制链接ToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.复制链接ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.复制链接ToolStripMenuItem.Text = "复制链接";
             this.复制链接ToolStripMenuItem.Click += new System.EventHandler(this.复制链接ToolStripMenuItem_Click);
             // 
@@ -211,32 +214,21 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "播放列表";
             // 
-            // btnResume
+            // btnStop
             // 
-            this.btnResume.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnResume.Location = new System.Drawing.Point(376, 414);
-            this.btnResume.Name = "btnResume";
-            this.btnResume.Size = new System.Drawing.Size(75, 23);
-            this.btnResume.TabIndex = 15;
-            this.btnResume.Text = "继续播放";
-            this.btnResume.UseVisualStyleBackColor = true;
-            this.btnResume.Click += new System.EventHandler(this.btnResume_Click);
-            // 
-            // btnPause
-            // 
-            this.btnPause.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnPause.Location = new System.Drawing.Point(295, 415);
-            this.btnPause.Name = "btnPause";
-            this.btnPause.Size = new System.Drawing.Size(75, 23);
-            this.btnPause.TabIndex = 16;
-            this.btnPause.Text = "暂停播放";
-            this.btnPause.UseVisualStyleBackColor = true;
-            this.btnPause.Click += new System.EventHandler(this.btnPause_Click);
+            this.btnStop.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnStop.Location = new System.Drawing.Point(376, 414);
+            this.btnStop.Name = "btnStop";
+            this.btnStop.Size = new System.Drawing.Size(75, 23);
+            this.btnStop.TabIndex = 15;
+            this.btnStop.Text = "停止";
+            this.btnStop.UseVisualStyleBackColor = true;
+            this.btnStop.Click += new System.EventHandler(this.btnStop_Click);
             // 
             // btnQRCode
             // 
-            this.btnQRCode.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnQRCode.Location = new System.Drawing.Point(200, 415);
+            this.btnQRCode.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnQRCode.Location = new System.Drawing.Point(90, 415);
             this.btnQRCode.Name = "btnQRCode";
             this.btnQRCode.Size = new System.Drawing.Size(89, 23);
             this.btnQRCode.TabIndex = 17;
@@ -244,20 +236,31 @@
             this.btnQRCode.UseVisualStyleBackColor = true;
             this.btnQRCode.Click += new System.EventHandler(this.btnQRCode_Click);
             // 
+            // 播放ToolStripMenuItem
+            // 
+            this.播放ToolStripMenuItem.Name = "播放ToolStripMenuItem";
+            this.播放ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.播放ToolStripMenuItem.Text = "播放";
+            this.播放ToolStripMenuItem.Click += new System.EventHandler(this.播放ToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(746, 678);
             this.Controls.Add(this.btnQRCode);
-            this.Controls.Add(this.btnPause);
-            this.Controls.Add(this.btnResume);
+            this.Controls.Add(this.btnStop);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.btnRefreshPlaylist);
             this.Controls.Add(this.btnClearLog);
             this.Controls.Add(this.tbLog);
             this.Controls.Add(this.cbCurrentDevice);
-            this.Controls.Add(this.btnPlayToDevice);
+            this.Controls.Add(this.btnPlayOrPause);
             this.Controls.Add(this.btnDiscoverDevices);
             this.Controls.Add(this.tbMediaDir);
             this.Controls.Add(this.statusStrip1);
@@ -287,15 +290,16 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
         private System.Windows.Forms.ToolStripMenuItem 复制链接ToolStripMenuItem;
-        private System.Windows.Forms.Button btnPlayToDevice;
+        private System.Windows.Forms.Button btnPlayOrPause;
         private System.Windows.Forms.ComboBox cbCurrentDevice;
         private System.Windows.Forms.TextBox tbLog;
         private System.Windows.Forms.Button btnClearLog;
         private System.Windows.Forms.Button btnRefreshPlaylist;
         private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.Button btnResume;
-        private System.Windows.Forms.Button btnPause;
+        private System.Windows.Forms.Button btnStop;
         private System.Windows.Forms.Button btnQRCode;
+        private System.Windows.Forms.ToolStripMenuItem 播放ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
     }
 }
 
