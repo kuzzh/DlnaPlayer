@@ -311,6 +311,7 @@ namespace DlnaPlayerApp
                         {
                             try
                             {
+                                _currentPlayIndex = lvPlaylist.Items.IndexOf(item);
                                 DlnaManager.Instance.CurrentDevice = _dlnaDevices.FirstOrDefault(d => d.DeviceName == lastPlayedDevice);
                                 var nextFileUrl = AppHelper.BuildMediaUrl(item.Tag.ToString(), DlnaManager.Instance.CurrentDevice.BaseUrl);
                                 DlnaManager.Instance.StopPlayback(out string errorMsg);

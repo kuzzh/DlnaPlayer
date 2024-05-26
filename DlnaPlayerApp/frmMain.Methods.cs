@@ -262,6 +262,8 @@ namespace DlnaPlayerApp
                     listViewItem.ForeColor = Color.Red;
                     _prevPlayingListViewItem = listViewItem;
                 }
+
+                _currentPlayIndex = lvPlaylist.Items.IndexOf(listViewItem);
             }
             lblCurrentMediaInfo.Text = $"{Path.GetFileName(HttpUtility.UrlDecode(e.PositionInfo.TrackURI))} {e.PositionInfo.RelTime}/{e.PositionInfo.TrackDuration} {e.CurrentDevice.DeviceName}";
 
