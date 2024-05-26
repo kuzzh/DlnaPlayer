@@ -48,23 +48,30 @@ namespace DlnaPlayerApp.WebSocket
                 return;
             }
 
-            var webCmd = WebCmd.FromJson(e.Data);
-            switch (webCmd.CmdType)
+            try
             {
-                case WebCmdType.QueryPlayState:
-                    HandleQueryPlayStateCmd();
-                    break;
-                case WebCmdType.PausePlay:
-                    HandlePausePlayCmd();
-                    break;
-                case WebCmdType.ResumePlay:
-                    HandleResumePlayCmd();
-                    break;
-                case WebCmdType.PlayVideo:
-                    HandlePlayVideoCmd(webCmd.VideoItem);
-                    break;
-                default:
-                    break;
+                var webCmd = WebCmd.FromJson(e.Data);
+                switch (webCmd.CmdType)
+                {
+                    case WebCmdType.QueryPlayState:
+                        HandleQueryPlayStateCmd();
+                        break;
+                    case WebCmdType.PausePlay:
+                        HandlePausePlayCmd();
+                        break;
+                    case WebCmdType.ResumePlay:
+                        HandleResumePlayCmd();
+                        break;
+                    case WebCmdType.PlayVideo:
+                        HandlePlayVideoCmd(webCmd.VideoItem);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                LogUtils.Error(logger, ex.Message);
             }
         }
 

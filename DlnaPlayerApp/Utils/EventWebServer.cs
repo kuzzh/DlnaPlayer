@@ -190,7 +190,7 @@ namespace DlnaPlayerApp
                 }
             }
 
-            if (DlnaManager.Instance.CurrentDevice == null || 
+            if (DlnaManager.Instance.CurrentDevice == null ||
                 sid != DlnaManager.Instance.CurrentDevice.SID ||
                 contentLength <= 0)
             {
@@ -230,7 +230,7 @@ namespace DlnaPlayerApp
                 }
                 _prevDlnaEvent = dlnaEvent;
             }
-            
+
 
             //receivedBCount = clientSocket.Receive(buffer);
             //if (receivedBCount > 0)

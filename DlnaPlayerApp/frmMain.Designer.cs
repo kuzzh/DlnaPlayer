@@ -36,6 +36,8 @@
             this.btnSelectDir = new System.Windows.Forms.Button();
             this.lvPlaylist = new System.Windows.Forms.ListView();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.播放ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.复制链接ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.btnDiscoverDevices = new System.Windows.Forms.Button();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
@@ -47,8 +49,7 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.btnStop = new System.Windows.Forms.Button();
             this.btnQRCode = new System.Windows.Forms.Button();
-            this.播放ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnContinuePlay = new System.Windows.Forms.Button();
             this.contextMenuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -118,12 +119,24 @@
             this.toolStripSeparator1,
             this.复制链接ToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(181, 76);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(125, 54);
+            // 
+            // 播放ToolStripMenuItem
+            // 
+            this.播放ToolStripMenuItem.Name = "播放ToolStripMenuItem";
+            this.播放ToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.播放ToolStripMenuItem.Text = "播放";
+            this.播放ToolStripMenuItem.Click += new System.EventHandler(this.播放ToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(121, 6);
             // 
             // 复制链接ToolStripMenuItem
             // 
             this.复制链接ToolStripMenuItem.Name = "复制链接ToolStripMenuItem";
-            this.复制链接ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.复制链接ToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
             this.复制链接ToolStripMenuItem.Text = "复制链接";
             this.复制链接ToolStripMenuItem.Click += new System.EventHandler(this.复制链接ToolStripMenuItem_Click);
             // 
@@ -236,23 +249,23 @@
             this.btnQRCode.UseVisualStyleBackColor = true;
             this.btnQRCode.Click += new System.EventHandler(this.btnQRCode_Click);
             // 
-            // 播放ToolStripMenuItem
+            // btnContituePlay
             // 
-            this.播放ToolStripMenuItem.Name = "播放ToolStripMenuItem";
-            this.播放ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.播放ToolStripMenuItem.Text = "播放";
-            this.播放ToolStripMenuItem.Click += new System.EventHandler(this.播放ToolStripMenuItem_Click);
-            // 
-            // toolStripSeparator1
-            // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
+            this.btnContinuePlay.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnContinuePlay.Location = new System.Drawing.Point(277, 414);
+            this.btnContinuePlay.Name = "btnContituePlay";
+            this.btnContinuePlay.Size = new System.Drawing.Size(93, 23);
+            this.btnContinuePlay.TabIndex = 18;
+            this.btnContinuePlay.Text = "继续上次播放";
+            this.btnContinuePlay.UseVisualStyleBackColor = true;
+            this.btnContinuePlay.Click += new System.EventHandler(this.btnContinuePlay_Click);
             // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(746, 678);
+            this.Controls.Add(this.btnContinuePlay);
             this.Controls.Add(this.btnQRCode);
             this.Controls.Add(this.btnStop);
             this.Controls.Add(this.groupBox1);
@@ -300,6 +313,7 @@
         private System.Windows.Forms.Button btnQRCode;
         private System.Windows.Forms.ToolStripMenuItem 播放ToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
+        private System.Windows.Forms.Button btnContinuePlay;
     }
 }
 

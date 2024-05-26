@@ -224,6 +224,30 @@ namespace DlnaPlayerApp
                 return;
             }
 
+            if (!string.IsNullOrEmpty(_seekPosition))
+            {
+                var ts = TimeSpan.Parse(_seekPosition);
+                if (e.PositionInfo.RelTimeSpan > new TimeSpan(0, 0, 0))
+                {
+                    if (e.PositionInfo.RelTimeSpan >= ts)
+                    {
+                        _seekPosition = null;
+                        LogUtils.Info(logger, e.PositionInfo.RelTimeSpan.ToString());
+                    }
+                    else
+                    {
+                        if (!DlnaManager.Instance.Seek(_seekPosition, out string errorMsg))
+                        {
+                            LogUtils.Error(logger, errorMsg);
+                        }
+                        else
+                        {
+                            LogUtils.Info(logger, $"已跳转到播放进度：{ts}");
+                        }
+                    }
+                }
+            }
+
             OnPlayStateChanged(this, new PlayStateChangedEventArgs(e.TransportInfo.CurrentTransportState));
 
             var listViewItem = FindListViewItem(e.PositionInfo.TrackURI);

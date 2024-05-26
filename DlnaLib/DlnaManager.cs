@@ -711,6 +711,59 @@ namespace DlnaLib
             return false;
         }
 
+        public bool Seek(string position, out string errorMsg)
+        {
+            try
+            {
+                errorMsg = "";
+
+                if (CurrentDevice == null)
+                {
+                    errorMsg = "跳转进度失败：未选择设备";
+                    return false;
+                }
+                // 创建HTTP请求
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
+                request.Method = "POST";
+                request.ContentType = "text/xml; charset=\"utf-8\"";
+                request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#Seek\"");
+
+                // 发送控制命令
+                string body = $@"<?xml version=""1.0""?>
+                            <s:Envelope xmlns:s=""http://schemas.xmlsoap.org/soap/envelope/"" s:encodingStyle=""http://schemas.xmlsoap.org/soap/encoding/"">
+                                <s:Body>
+                                    <u:Seek xmlns:u=""urn:schemas-upnp-org:service:AVTransport:1"">
+                                        <InstanceID>0</InstanceID>
+                                        <Unit>REL_TIME</Unit>
+                                        <Target>{position}</Target>
+                                    </u:Seek>
+                                </s:Body>
+                            </s:Envelope>";
+
+                byte[] byteBody = Encoding.UTF8.GetBytes(body);
+                request.ContentLength = byteBody.Length;
+
+                using (var stream = request.GetRequestStream())
+                {
+                    stream.Write(byteBody, 0, byteBody.Length);
+                }
+
+                // 获取响应
+                var response = (HttpWebResponse)request.GetResponse();
+                if (response != null && response.StatusCode == HttpStatusCode.OK)
+                {
+                    return true;
+                }
+
+                errorMsg = GetResponseText(response);
+            }
+            catch (Exception ex)
+            {
+                errorMsg = ex.Message;
+            }
+            return false;
+        }
+
         private static string GetResponseText(HttpWebResponse response)
         {
             if (response == null)

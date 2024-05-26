@@ -7,15 +7,13 @@ using DlnaPlayerApp.Utils;
 using DlnaPlayerApp.WebSocket;
 using DlnaPlayerApp.WebSocket.Protocol;
 using log4net;
-using QRCoder;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Net;
-using System.Security.Policy;
 using System.Text;
-using System.Threading;
 using System.Windows.Forms;
 using WaitWnd;
 
@@ -39,6 +37,8 @@ namespace DlnaPlayerApp
 
         // 上一个播放的 ListViewItem
         private ListViewItem _prevPlayingListViewItem;
+
+        private string _seekPosition;
 
         private ListViewItem SelectedItem
         {
@@ -73,6 +73,12 @@ namespace DlnaPlayerApp
                 !string.IsNullOrEmpty(AppConfig.Default.LastPlayedInfo.LastPlayedTime))
             {
                 lblCurrentMediaInfo.Text = $"{AppConfig.Default.LastPlayedInfo.LastPlayedFile} {AppConfig.Default.LastPlayedInfo.LastPlayedTime} {AppConfig.Default.LastPlayedInfo.LastPlayedDevice}";
+
+                btnContinuePlay.Visible = true;
+            }
+            else
+            {
+                btnContinuePlay.Visible = false;
             }
 
             btnPlayOrPause.Enabled = false;
@@ -102,6 +108,7 @@ namespace DlnaPlayerApp
                 btnPlayOrPause.Text = "暂停";
                 btnPlayOrPause.Enabled = true;
                 btnStop.Enabled = true;
+                btnContinuePlay.Visible = false;
             }
             else if (e.State == EnumTransportState.PAUSED ||
                 e.State == EnumTransportState.PAUSED_PLAYBACK)
@@ -276,6 +283,58 @@ namespace DlnaPlayerApp
                     LogUtils.Error(logger, $"操作失败：{ex.Message}");
                 }
             });
+        }
+
+        private void btnContinuePlay_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var lastPlayedFile = AppConfig.Default.LastPlayedInfo.LastPlayedFile;
+                var lastPlayedTime = AppConfig.Default.LastPlayedInfo.LastPlayedTime;
+                var lastPlayedDevice = AppConfig.Default.LastPlayedInfo.LastPlayedDevice;
+
+                if (string.IsNullOrEmpty(lastPlayedFile) || string.IsNullOrEmpty(lastPlayedTime))
+                {
+                    return;
+                }
+
+                if (!_dlnaDevices.Exists(d => d.DeviceName == lastPlayedDevice))
+                {
+                    LogUtils.Error(logger, "继续播放失败，设备不存在");
+                    return;
+                }
+                foreach (ListViewItem item in lvPlaylist.Items)
+                {
+                    if (Path.GetFileName(item.Tag.ToString()) == lastPlayedFile)
+                    {
+                        _waitForm.Show(this, () =>
+                        {
+                            try
+                            {
+                                DlnaManager.Instance.CurrentDevice = _dlnaDevices.FirstOrDefault(d => d.DeviceName == lastPlayedDevice);
+                                var nextFileUrl = AppHelper.BuildMediaUrl(item.Tag.ToString(), DlnaManager.Instance.CurrentDevice.BaseUrl);
+                                DlnaManager.Instance.StopPlayback(out string errorMsg);
+                                if (!DlnaManager.Instance.SendVideoToDLNA(nextFileUrl, out errorMsg))
+                                {
+                                    LogUtils.Error(logger, errorMsg);
+                                    return;
+                                }
+                                _seekPosition = lastPlayedTime.Split('/')[0];
+                            }
+                            catch (Exception ex)
+                            {
+                                LogUtils.Error(logger, $"继续播放失败：{ex.Message}");
+                            }
+                        });
+
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogUtils.Error(logger, $"继续播放失败：{ex.Message}");
+            }
         }
 
         private void btnClearLog_Click(object sender, EventArgs e)
