@@ -267,10 +267,33 @@ namespace DlnaPlayerApp
             }
             lblCurrentMediaInfo.Text = $"{Path.GetFileName(HttpUtility.UrlDecode(e.PositionInfo.TrackURI))} {e.PositionInfo.RelTime}/{e.PositionInfo.TrackDuration} {e.CurrentDevice.DeviceName}";
 
-            AppConfig.Default.LastPlayedInfo.LastPlayedDevice = DlnaManager.Instance.CurrentDevice.DeviceName;
-            AppConfig.Default.LastPlayedInfo.LastPlayedFile = Path.GetFileName(HttpUtility.UrlDecode(e.PositionInfo.TrackURI));
-            AppConfig.Default.LastPlayedInfo.LastPlayedTime = $"{e.PositionInfo.RelTime}/{e.PositionInfo.TrackDuration}";
-            AppConfig.Default.SaveConfig();
+            var mi = new MediaPlayInfo
+            {
+                Device = DlnaManager.Instance.CurrentDevice.DeviceName,
+                MediaFile = Path.GetFileName(HttpUtility.UrlDecode(e.PositionInfo.TrackURI)),
+                PlayedTime = $"{e.PositionInfo.RelTime}/{e.PositionInfo.TrackDuration}"
+            };
+            if (MRUListConfig.Default.MRUPlayedList.Count > 0)
+            {
+                var lastMedia = MRUListConfig.Default.MRUPlayedList.Last();
+                if (lastMedia.MediaFile == mi.MediaFile && lastMedia.Device == mi.Device)
+                {
+                    lastMedia.PlayedTime = mi.PlayedTime;
+                }
+                else
+                {
+                    if (MRUListConfig.Default.MRUPlayedList.Count > 10)
+                    {
+                        MRUListConfig.Default.MRUPlayedList.Remove(MRUListConfig.Default.MRUPlayedList.First());
+                    }
+                    MRUListConfig.Default.MRUPlayedList.Add(mi);
+                }
+            }
+            else
+            {
+                MRUListConfig.Default.MRUPlayedList.Add(mi);
+            }
+            MRUListConfig.Default.SaveConfig();
         }
 
         private ListViewItem FindListViewItem(string videoUrl)

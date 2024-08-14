@@ -3,9 +3,12 @@ using log4net;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace DlnaLib.Model
@@ -54,7 +57,8 @@ namespace DlnaLib.Model
 
                 var httpClient = new HttpClient();
                 // 访问设备描述文档获取更多信息
-                var descriptionXml = httpClient.GetStringAsync(deviceLocation).Result;
+                //var descriptionXml = httpClient.GetStringAsync(deviceLocation).Result;
+                var descriptionXml = GetStringAsync(deviceLocation).Result;
 
                 // 解析设备描述文档，获取设备名称等信息
                 // 在这里你可以使用合适的XML解析方法来提取设备信息
@@ -217,6 +221,42 @@ namespace DlnaLib.Model
         public override string ToString()
         {
             return DeviceName;
+        }
+
+        private async Task<string> GetStringAsync(string url)
+        {
+            using (var client = new HttpClient())
+            {
+                try
+                {
+                    // 发送 GET 请求
+                    var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                    response.EnsureSuccessStatusCode();
+
+                    // 获取响应头中的 Content-Type
+                    var contentType = response.Content.Headers.ContentType?.ToString() ?? "text/html; charset=utf-8";
+                    var charset = Regex.Match(contentType, @"(?<=charset=)[^\s]+").Value;
+
+                    // 如果没有指定字符集，默认使用 utf-8
+                    if (string.IsNullOrEmpty(charset))
+                    {
+                        charset = "utf-8";
+                    }
+
+                    // 获取响应流并使用指定的编码读取内容
+                    using (var stream = await response.Content.ReadAsStreamAsync())
+                    using (var reader = new StreamReader(stream, Encoding.UTF8))
+                    {
+                        var content = await reader.ReadToEndAsync();
+                        return content;
+                    }
+                }
+                catch (HttpRequestException e)
+                {
+                    Console.WriteLine($"Request error: {e.Message}");
+                    return "";
+                }
+            }
         }
     }
 }

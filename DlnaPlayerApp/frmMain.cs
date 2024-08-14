@@ -68,12 +68,8 @@ namespace DlnaPlayerApp
             lblCurrentMediaInfo.Spring = true;
             statusStrip1.Renderer = new StatusStripRenderer();
 
-            if (!string.IsNullOrEmpty(AppConfig.Default.LastPlayedInfo.LastPlayedFile) &&
-                !string.IsNullOrEmpty(AppConfig.Default.LastPlayedInfo.LastPlayedDevice) &&
-                !string.IsNullOrEmpty(AppConfig.Default.LastPlayedInfo.LastPlayedTime))
+            if (MRUListConfig.Default.MRUPlayedList.Count > 0)
             {
-                lblCurrentMediaInfo.Text = $"{AppConfig.Default.LastPlayedInfo.LastPlayedFile} {AppConfig.Default.LastPlayedInfo.LastPlayedTime} {AppConfig.Default.LastPlayedInfo.LastPlayedDevice}";
-
                 btnContinuePlay.Visible = true;
             }
             else
@@ -172,11 +168,11 @@ namespace DlnaPlayerApp
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            if (MessageBox.Show("确定要退出吗？", "询问", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.Cancel)
-            {
-                e.Cancel = true;
-                return;
-            }
+            //if (MessageBox.Show("确定要退出吗？", "询问", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.Cancel)
+            //{
+            //    e.Cancel = true;
+            //    return;
+            //}
             DlnaManager.Instance.Dispose();
             NginxUtils.StopServer();
             EventWebServer.Instance.Stop();
@@ -289,9 +285,10 @@ namespace DlnaPlayerApp
         {
             try
             {
-                var lastPlayedFile = AppConfig.Default.LastPlayedInfo.LastPlayedFile;
-                var lastPlayedTime = AppConfig.Default.LastPlayedInfo.LastPlayedTime;
-                var lastPlayedDevice = AppConfig.Default.LastPlayedInfo.LastPlayedDevice;
+                var lastPalyed = MRUListConfig.Default.MRUPlayedList.Last();
+                var lastPlayedFile = lastPalyed.MediaFile;
+                var lastPlayedTime = lastPalyed.PlayedTime;
+                var lastPlayedDevice = lastPalyed.Device;
 
                 if (string.IsNullOrEmpty(lastPlayedFile) || string.IsNullOrEmpty(lastPlayedTime))
                 {
@@ -418,6 +415,11 @@ namespace DlnaPlayerApp
             qrForm.Controls.Add(label);
 
             qrForm.ShowDialog(this);
+        }
+
+        private void btnMRU_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show(MRUListConfig.Default.ToString(), "最近播放");
         }
     }
 }

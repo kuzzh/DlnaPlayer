@@ -50,6 +50,7 @@
             this.btnStop = new System.Windows.Forms.Button();
             this.btnQRCode = new System.Windows.Forms.Button();
             this.btnContinuePlay = new System.Windows.Forms.Button();
+            this.btnMRU = new System.Windows.Forms.Button();
             this.contextMenuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -241,7 +242,7 @@
             // btnQRCode
             // 
             this.btnQRCode.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnQRCode.Location = new System.Drawing.Point(90, 415);
+            this.btnQRCode.Location = new System.Drawing.Point(90, 414);
             this.btnQRCode.Name = "btnQRCode";
             this.btnQRCode.Size = new System.Drawing.Size(89, 23);
             this.btnQRCode.TabIndex = 17;
@@ -249,22 +250,34 @@
             this.btnQRCode.UseVisualStyleBackColor = true;
             this.btnQRCode.Click += new System.EventHandler(this.btnQRCode_Click);
             // 
-            // btnContituePlay
+            // btnContinuePlay
             // 
             this.btnContinuePlay.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnContinuePlay.Location = new System.Drawing.Point(277, 414);
-            this.btnContinuePlay.Name = "btnContituePlay";
+            this.btnContinuePlay.Name = "btnContinuePlay";
             this.btnContinuePlay.Size = new System.Drawing.Size(93, 23);
             this.btnContinuePlay.TabIndex = 18;
             this.btnContinuePlay.Text = "继续上次播放";
             this.btnContinuePlay.UseVisualStyleBackColor = true;
             this.btnContinuePlay.Click += new System.EventHandler(this.btnContinuePlay_Click);
             // 
+            // btnMRU
+            // 
+            this.btnMRU.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnMRU.Location = new System.Drawing.Point(185, 414);
+            this.btnMRU.Name = "btnMRU";
+            this.btnMRU.Size = new System.Drawing.Size(75, 23);
+            this.btnMRU.TabIndex = 19;
+            this.btnMRU.Text = "最近播放";
+            this.btnMRU.UseVisualStyleBackColor = true;
+            this.btnMRU.Click += new System.EventHandler(this.btnMRU_Click);
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(746, 678);
+            this.Controls.Add(this.btnMRU);
             this.Controls.Add(this.btnContinuePlay);
             this.Controls.Add(this.btnQRCode);
             this.Controls.Add(this.btnStop);
@@ -314,6 +327,7 @@
         private System.Windows.Forms.ToolStripMenuItem 播放ToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.Button btnContinuePlay;
+        private System.Windows.Forms.Button btnMRU;
     }
 }
 

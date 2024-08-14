@@ -67,6 +67,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config\AppConfig.cs" />
+    <Compile Include="Config\MRUListConfig.cs" />
     <Compile Include="Utils\AppHelper.cs" />
     <Compile Include="Config\DeviceConfig.cs" />
     <Compile Include="frmMain.cs">

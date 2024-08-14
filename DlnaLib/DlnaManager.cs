@@ -141,7 +141,7 @@ namespace DlnaLib
                 try
                 {
                     var receivedBytes = _udpClient.Receive(ref remoteEndPoint);
-                    var response = Encoding.ASCII.GetString(receivedBytes);
+                    var response = Encoding.Default.GetString(receivedBytes);
 
                     // 解析响应中的LOCATION头部信息
                     var lines = response.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -183,7 +183,7 @@ namespace DlnaLib
         {
             await Task.Factory.StartNew(() =>
             {
-                if (dlnaDevice == null)
+                if (dlnaDevice == null || dlnaDevice.EventSubURL == null)
                 {
                     return;
                 }
@@ -237,7 +237,7 @@ namespace DlnaLib
                 }
 
                 var request = WebRequest.Create(new Uri(dlnaDevice.EventSubURL)) as HttpWebRequest;
-                request.Method = "UNSUBSCRIBE ";
+                request.Method = "UNSUBSCRIBE";
                 request.UserAgent = "DlnaPlayer/1.0";
                 request.Headers["SID"] = dlnaDevice.SID;
 
@@ -278,7 +278,7 @@ namespace DlnaLib
                 // 创建HTTP请求
                 var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
-                request.ContentType = "text/xml; charset=\"utf-8\"";
+                request.ContentType = "text/xml";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI\"");
 
                 // 发送视频URL
@@ -324,14 +324,14 @@ namespace DlnaLib
         {
             try
             {
-                if (CurrentDevice == null)
+                if (CurrentDevice == null || CurrentDevice.ControlUrl == null)
                 {
                     return null;
                 }
                 // 创建HTTP请求
                 var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
-                request.ContentType = "text/xml; charset=utf-8";
+                request.ContentType = "text/xml";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#GetTransportInfo\"");
 
                 // 发送获取播放状态信息的请求
@@ -396,7 +396,7 @@ namespace DlnaLib
                 // 创建HTTP请求
                 var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
-                request.ContentType = "text/xml; charset=utf-8";
+                request.ContentType = "text/xml";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#GetMediaInfo\"");
 
                 // 发送获取播放状态信息的请求
@@ -450,14 +450,14 @@ namespace DlnaLib
         {
             try
             {
-                if (CurrentDevice == null)
+                if (CurrentDevice == null || CurrentDevice.ControlUrl == null)
                 {
                     return null;
                 }
                 // 创建HTTP请求
                 var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
-                request.ContentType = "text/xml; charset=utf-8";
+                request.ContentType = "text/xml";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#GetPositionInfo\"");
 
                 // 发送获取播放状态信息的请求
@@ -519,7 +519,7 @@ namespace DlnaLib
                 // 创建HTTP请求
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
-                request.ContentType = "text/xml; charset=\"utf-8\"";
+                request.ContentType = "text/xml";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#Play\"");
 
                 // 发送控制命令
@@ -570,7 +570,7 @@ namespace DlnaLib
                 // 创建HTTP请求
                 var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
-                request.ContentType = "text/xml; charset=\"utf-8\"";
+                request.ContentType = "text/xml";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#Pause\"");
 
                 // 发送控制命令
@@ -621,7 +621,7 @@ namespace DlnaLib
                 // 创建HTTP请求
                 var request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
-                request.ContentType = "text/xml; charset=\"utf-8\"";
+                request.ContentType = "text/xml";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#Play\"");
 
                 // 发送控制命令
@@ -674,7 +674,7 @@ namespace DlnaLib
                 // 创建HTTP请求
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
-                request.ContentType = "text/xml; charset=\"utf-8\"";
+                request.ContentType = "text/xml";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#Stop\"");
 
                 // 发送控制命令
@@ -725,7 +725,7 @@ namespace DlnaLib
                 // 创建HTTP请求
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(CurrentDevice.ControlUrl);
                 request.Method = "POST";
-                request.ContentType = "text/xml; charset=\"utf-8\"";
+                request.ContentType = "text/xml";
                 request.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:AVTransport:1#Seek\"");
 
                 // 发送控制命令
