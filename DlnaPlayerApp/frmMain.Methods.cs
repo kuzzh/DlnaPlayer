@@ -16,6 +16,8 @@ using DlnaPlayerApp.Config;
 using DlnaLib.Event;
 using DlnaLib.Model;
 using DlnaLib.Utils;
+using WebSocketSharp;
+using Logger = log4net.Repository.Hierarchy.Logger;
 
 namespace DlnaPlayerApp
 {
@@ -273,27 +275,30 @@ namespace DlnaPlayerApp
                 MediaFile = Path.GetFileName(HttpUtility.UrlDecode(e.PositionInfo.TrackURI)),
                 PlayedTime = $"{e.PositionInfo.RelTime}/{e.PositionInfo.TrackDuration}"
             };
-            if (MRUListConfig.Default.MRUPlayedList.Count > 0)
+            if (!mi.MediaFile.IsNullOrEmpty())
             {
-                var lastMedia = MRUListConfig.Default.MRUPlayedList.Last();
-                if (lastMedia.MediaFile == mi.MediaFile && lastMedia.Device == mi.Device)
+                if (MRUListConfig.Default.MRUPlayedList.Count > 0)
                 {
-                    lastMedia.PlayedTime = mi.PlayedTime;
+                    var lastMedia = MRUListConfig.Default.MRUPlayedList.Last();
+                    if (lastMedia.MediaFile == mi.MediaFile && lastMedia.Device == mi.Device)
+                    {
+                        lastMedia.PlayedTime = mi.PlayedTime;
+                    }
+                    else
+                    {
+                        if (MRUListConfig.Default.MRUPlayedList.Count > 10)
+                        {
+                            MRUListConfig.Default.MRUPlayedList.Remove(MRUListConfig.Default.MRUPlayedList.First());
+                        }
+                        MRUListConfig.Default.MRUPlayedList.Add(mi);
+                    }
                 }
                 else
                 {
-                    if (MRUListConfig.Default.MRUPlayedList.Count > 10)
-                    {
-                        MRUListConfig.Default.MRUPlayedList.Remove(MRUListConfig.Default.MRUPlayedList.First());
-                    }
                     MRUListConfig.Default.MRUPlayedList.Add(mi);
                 }
+                MRUListConfig.Default.SaveConfig();
             }
-            else
-            {
-                MRUListConfig.Default.MRUPlayedList.Add(mi);
-            }
-            MRUListConfig.Default.SaveConfig();
         }
 
         private ListViewItem FindListViewItem(string videoUrl)
