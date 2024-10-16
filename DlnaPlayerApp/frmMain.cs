@@ -9,6 +9,7 @@ using DlnaPlayerApp.WebSocket.Protocol;
 using log4net;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -356,6 +357,16 @@ namespace DlnaPlayerApp
             }
         }
 
+        public void RefreshList()
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => RefreshList()));
+                return;
+            }
+            btnRefreshPlaylist.PerformClick();
+        }
+
         private void btnRefreshPlaylist_Click(object sender, EventArgs e)
         {
             LoadPlaylist(AppConfig.Default.MediaDir, false);
@@ -401,11 +412,15 @@ namespace DlnaPlayerApp
             };
             qrForm.Controls.Add(qrImage);
 
-            var label = new Label
+            var label = new LinkLabel
             {
                 Text = url,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Bottom
+            };
+            label.Click += (sender1, e1) =>
+            {
+                Process.Start(url);
             };
             label.MouseDoubleClick += (sender1, e1) =>
             {

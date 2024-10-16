@@ -1,431 +1,496 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DLNA Player Web</title>
     <script src="vue.js"></script>
     <style>
-      body {
-        font-family: 'Microsoft YaHei', Arial, sans-serif;
-        background-color: #f4f4f4;
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        overflow: hidden;
-        box-sizing: border-box;
-      }
-
-      .container {
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-        height: 100vh;
-        overflow: hidden;
-      }
-
-      .playlist {
-        box-sizing: border-box;
-        list-style: none;
-        padding: 0px;
-        padding-bottom: 90px;
-        margin: 0px;
-        overflow: scroll;
-      }
-
-      .player {
-        box-sizing: border-box;
-        background: #fff;
-        border-radius: 5px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        margin: 10px 10px 0px 10px;
-        padding: 15px; /* Reduced padding for mobile */
-
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-      }
-
-      .caption {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: #333;
-        font-size: 20px;
-        padding: 10px;
-        box-sizing: border-box;
-      }
-
-      .current-track {
-        white-space: nowrap; /* 文本不换行 */
-        overflow: hidden; /* 溢出隐藏 */
-        text-overflow: ellipsis; /* 显示省略号 */
-        font-weight: 700;
-      }
-
-      .player-info {
-        display: flex;
-        flex-direction: column;
-        margin-bottom: 10px;
-        line-height: 1.2rem;
-      }
-
-      .reltime-current-device {
-        display: flex;
-        justify-content: space-between;
-      }
-
-      .player-controls {
-        text-align: center;
-      }
-
-      .player-controls button {
-        padding: 8px 12px;
-        margin: 0 3px;
-        border: none;
-        border-radius: 5px;
-        background-color: #007bff;
-        color: white;
-        cursor: pointer;
-        font-size: 14px;
-      }
-
-      .player-controls button:hover {
-        background-color: #0056b3;
-      }
-
-      .playlist li {
-        background: #e9ecef;
-        margin: 5px 10px;
-        padding: 8px 12px;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background 0.3s ease;
-      }
-
-      .playlist li:hover {
-        background: #d3d9df;
-      }
-
-      .playlist li.active {
-        background: #007bff;
-        color: white;
-      }
-
-      .loading {
-        position: fixed;
-        top: 0px;
-        left: 0px;
-        width: 100%;
-        height: 100%;
-        color: #f3f3f3;
-        font-size: 16px;
-        background-color: rgba(0, 0, 0, 0.75);
-        z-index: 999;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-
-      .loading-circle {
-        border: 4px solid #f3f3f3; /* 圆圈的边框 */
-        border-top: 4px solid #3498db; /* 圆圈的顶部边框，你可以自定义颜色 */
-        border-radius: 50%; /* 使其成为一个圆 */
-        width: 12px; /* 圆圈的宽度 */
-        height: 12px; /* 圆圈的高度 */
-        animation: spin 1s linear infinite; /* 使用名为 spin 的动画，持续时间为 1 秒，线性运动，无限循环 */
-        margin-right: 10px;
-      }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        /* 0% 时，圆圈旋转角度为 0 度 */
-        100% {
-          transform: rotate(360deg);
-        }
-        /* 100% 时，圆圈旋转角度为 360 度，即一圈 */
-      }
-
-      .error-label {
-        display: flex;
-        justify-content: center;
-        padding: 10px;
-        background-color: #fef0f0;
-        color: #f76c7d;
-        border-radius: 4px;
-        border: 1px solid #fde2e2;
-      }
-
-      .no-scroll {
-        overflow: hidden;
-      }
-
-      /* Media query for mobile devices */
-      @media (max-width: 768px) {
-        .player {
-          width: unset;
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            box-sizing: border-box;
         }
 
-        .caption {
-          font-size: 18px;
+        .container {
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
         }
 
-        .player-info {
-          font-size: 12px;
-        }
-
-        .player-controls button {
-          padding: 6px 10px;
-          font-size: 12px;
+        .playlist-div {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
         }
 
         .playlist {
-          width: unset;
+            box-sizing: border-box;
+            list-style: none;
+            padding: 0px;
+            padding-bottom: 90px;
+            margin: 0px;
+            overflow: scroll;
         }
 
-        .playlist li {
-          padding: 6px 5px;
-          font-size: 14px;
+        .player {
+            box-sizing: border-box;
+            background: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            margin: 10px 10px 0px 10px;
+            padding: 15px; /* Reduced padding for mobile */
+
+            position: fixed;
+            bottom: 0;
+            width: 100%;
         }
-      }
+
+        .caption {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+            font-size: 20px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .current-track {
+            white-space: nowrap; /* 文本不换行 */
+            overflow: hidden; /* 溢出隐藏 */
+            text-overflow: ellipsis; /* 显示省略号 */
+            font-weight: 700;
+        }
+
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+            line-height: 1.2rem;
+        }
+
+        .reltime-current-device {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .player-controls {
+            text-align: center;
+        }
+
+        button {
+            padding: 8px 12px;
+            margin: 0 3px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+            button:hover {
+                background-color: #0056b3;
+            }
+
+        .playlist li {
+            background: #e9ecef;
+            margin: 5px 10px;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+            .playlist li:hover {
+                background: #d3d9df;
+            }
+
+            .playlist li.active {
+                background: #007bff;
+                color: white;
+            }
+
+        .loading {
+            position: fixed;
+            top: 0px;
+            left: 0px;
+            width: 100%;
+            height: 100%;
+            color: #f3f3f3;
+            font-size: 16px;
+            background-color: rgba(0, 0, 0, 0.75);
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-circle {
+            border: 4px solid #f3f3f3; /* 圆圈的边框 */
+            border-top: 4px solid #3498db; /* 圆圈的顶部边框，你可以自定义颜色 */
+            border-radius: 50%; /* 使其成为一个圆 */
+            width: 12px; /* 圆圈的宽度 */
+            height: 12px; /* 圆圈的高度 */
+            animation: spin 1s linear infinite; /* 使用名为 spin 的动画，持续时间为 1 秒，线性运动，无限循环 */
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            /* 0% 时，圆圈旋转角度为 0 度 */
+            100% {
+                transform: rotate(360deg);
+            }
+            /* 100% 时，圆圈旋转角度为 360 度，即一圈 */
+        }
+
+        .error-label {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            background-color: #fef0f0;
+            color: #f76c7d;
+            border-radius: 4px;
+            border: 1px solid #fde2e2;
+        }
+
+        .no-scroll {
+            overflow: hidden;
+        }
+
+        .refresh-list-div {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 0px 10px;
+            box-sizing: border-box;
+        }
+
+        a {
+            color: #007bff; /* 使用一种鲜艳的颜色，如蓝色 */
+            text-decoration: none; /* 去掉默认的下划线 */
+            transition: color 0.3s ease; /* 添加颜色过渡效果 */
+        }
+
+            a:hover {
+                color: #0056b3; /* 鼠标悬停时颜色变深 */
+                text-decoration: underline; /* 悬停时显示下划线 */
+            }
+
+            a:visited {
+                color: #6c757d; /* 已访问链接的颜色，使用较暗的颜色 */
+            }
+
+            a:active {
+                color: #dc3545; /* 点击时的颜色，使用红色 */
+            }
+
+        /* Media query for mobile devices */
+        @media (max-width: 768px) {
+            .player {
+                width: unset;
+            }
+
+            .caption {
+                font-size: 18px;
+            }
+
+            .player-info {
+                font-size: 12px;
+            }
+
+            .player-controls button {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+
+            .playlist {
+                width: unset;
+            }
+
+                .playlist li {
+                    padding: 6px 5px;
+                    font-size: 14px;
+                }
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
     <div id="app" class="container">
-      <div class="error-label" v-if="errorMessage">{{errorMessage}}</div>
-      <div class="caption">DLNA Player Web</div>
-      <ul class="playlist">
-        <li v-for="videoItem in playState.VideoItems" v-on:click="playVideo(videoItem)" v-bind:class="{'active' : playState.CurrentVideo ? videoItem.RelPath === playState.CurrentVideo.RelPath : false}" v-bind:key="videoItem.RelPath">{{videoItem.Title}}</li>
-      </ul>
-      <div class="player">
-        <div class="player-info" v-if="playState.CurrentVideo">
-          <div class="reltime-current-device">
-            <span>{{playState.RelTime}}/{{playState.TrackDuration}}</span>
-            <span>{{playState.CurrentDevice}}</span>
-          </div>
-          <span class="current-track">{{playState.CurrentVideo.Title}}</span>
+        <div class="error-label" v-if="errorMessage">{{errorMessage}}</div>
+        <div class="caption">DLNA Player Web</div>
+        <div class="playlist-div">
+            <div class="refresh-list-div">
+                <a href="#" v-on:click="refreshList">刷新列表</a>
+            </div>
+            <ul class="playlist">
+                <li v-for="videoItem in playState.VideoItems"
+                    v-on:click="playVideo(videoItem)"
+                    v-bind:class="{'active' : playState.CurrentVideo ? videoItem.RelPath === playState.CurrentVideo.RelPath : false}"
+                    v-bind:key="videoItem.RelPath">
+                    {{videoItem.Title}}
+                </li>
+            </ul>
         </div>
-        <div class="player-controls">
-          <button v-on:click="pausePlay">暂停播放</button>
-          <button v-on:click="resumePlay">继续播放</button>
-          <button v-on:click="playPrev">上一个</button>
-          <button v-on:click="playNext">下一个</button>
+
+        <div class="player">
+            <div class="player-info" v-if="playState.CurrentVideo">
+                <div class="reltime-current-device">
+                    <span>{{playState.RelTime}}/{{playState.TrackDuration}}</span>
+                    <span>{{playState.CurrentDevice}}</span>
+                </div>
+                <span class="current-track">{{playState.CurrentVideo.Title}}</span>
+            </div>
+            <div class="player-controls">
+                <button v-on:click="pausePlay">暂停播放</button>
+                <button v-on:click="resumePlay">继续播放</button>
+                <button v-on:click="playPrev">上一个</button>
+                <button v-on:click="playNext">下一个</button>
+            </div>
         </div>
-      </div>
-      <div class="loading" v-if="loadingVisible">
-        <div class="loading-circle"></div>
-        <span>请稍后...</span>
-      </div>
+        <div class="loading" v-if="loadingVisible">
+            <div class="loading-circle"></div>
+            <span>请稍后...</span>
+        </div>
     </div>
 
     <script>
-      // 指令类型：0-查询播放状态 1-暂停播放 2-继续播放 3-播放视频
-      const QUERY_PLAY_STATE_CMD = 0;
-      const PAUSE_PLAY_CMD = 1;
-      const RESUME_PLAY_CMD = 2;
-      const PLAY_VIDEO_CMD = 3;
-      var app = new Vue({
-        el: '#app',
-        data: {
-          ws: null,
-          connected: false,
-          errorMessage: '',
-          playState: {},
-          loadingVisible: false,
-          reconnectInterval: 2000,
-        },
-        watch: {
-          loadingVisible: function (val) {
-            if (val) {
-              document.querySelector('body').classList.add('no-scroll');
-            } else {
-              document.querySelector('body').classList.remove('no-scroll');
-            }
-          },
-        },
-        methods: {
-          queryPlayState() {
-            if (!this.ws || !this.connected) {
-              return;
-            }
-            var playStateQuery = JSON.stringify({ CmdType: QUERY_PLAY_STATE_CMD });
-            this.ws.send(playStateQuery);
-          },
-          startQueryPlayStateTimer(delayTime) {
-            let self = this;
-            setTimeout(() => {
-              self.queryPlayState();
-              self.startQueryPlayStateTimer(2000);
-            }, delayTime);
-          },
-          pausePlay() {
-            if (!this.ws || !this.connected) {
-              return;
-            }
-            this.loadingVisible = true;
-            var pausePlayCmd = JSON.stringify({
-              CmdType: PAUSE_PLAY_CMD,
-            });
-            this.ws.send(pausePlayCmd);
-          },
-          resumePlay() {
-            if (!this.ws || !this.connected) {
-              return;
-            }
-            this.loadingVisible = true;
-            var resumePlayCmd = JSON.stringify({
-              CmdType: RESUME_PLAY_CMD,
-            });
-            this.ws.send(resumePlayCmd);
-          },
-          playVideo(videoItem) {
-            if (!this.ws || !this.connected) {
-              return;
-            }
-            this.loadingVisible = true;
-            var playVideoCmd = JSON.stringify({
-              CmdType: PLAY_VIDEO_CMD,
-              VideoItem: videoItem,
-            });
-            this.ws.send(playVideoCmd);
-          },
-          playPrev() {
-            if (!this.ws || !this.connected) {
-              return;
-            }
-            let prevVideoItem = this.getPrevVideo();
-            if (prevVideoItem) {
-              this.playVideo(prevVideoItem);
-            }
-          },
-          playNext() {
-            if (!this.ws || !this.connected) {
-              return;
-            }
-            let nextVideoItem = this.getNextVideo();
-            if (nextVideoItem) {
-              this.playVideo(nextVideoItem);
-            }
-          },
-          getPrevVideo() {
-            let currentIndex = this.getCurrentIndex();
-            if (currentIndex == -1) {
-              return null;
-            }
-            currentIndex -= 1;
-            if (currentIndex < 0) {
-              currentIndex = 0;
-            }
-            return this.playState.VideoItems[currentIndex];
-          },
-          getNextVideo() {
-            let currentIndex = this.getCurrentIndex();
-            if (currentIndex == -1) {
-              return null;
-            }
-            currentIndex += 1;
-            if (currentIndex >= this.playState.VideoItems.length) {
-              currentIndex = this.playState.VideoItems.length - 1;
-            }
-            return this.playState.VideoItems[currentIndex];
-          },
-          getCurrentIndex() {
-            if (!this.playState.CurrentVideo) {
-              return -1;
-            }
-            for (let i = 0; i < this.playState.VideoItems.length; i++) {
-              if (this.playState.VideoItems[i].Title === this.playState.CurrentVideo.Title && this.playState.VideoItems[i].RelPath === this.playState.CurrentVideo.RelPath) {
-                return i;
-              }
-            }
-            return -1;
-          },
-          connectWebSocket() {
-            console.log('正在连接WebSocket...');
-            try {
-              this.ws = new WebSocket(`ws://${window.location.hostname}:1574/`);
+        // 指令类型：0-查询播放状态 1-暂停播放 2-继续播放 3-播放视频 4-刷新列表
+        const QUERY_PLAY_STATE_CMD = 0;
+        const PAUSE_PLAY_CMD = 1;
+        const RESUME_PLAY_CMD = 2;
+        const PLAY_VIDEO_CMD = 3;
+        const REFRESH_LIST_CMD = 4;
+        var app = new Vue({
+            el: "#app",
+            data: {
+                ws: null,
+                connected: false,
+                errorMessage: "",
+                playState: {},
+                loadingVisible: false,
+                reconnectInterval: 2000,
+            },
+            watch: {
+                loadingVisible: function (val) {
+                    if (val) {
+                        document.querySelector("body").classList.add("no-scroll");
+                    } else {
+                        document.querySelector("body").classList.remove("no-scroll");
+                    }
+                },
+            },
+            methods: {
+                queryPlayState() {
+                    if (!this.ws || !this.connected) {
+                        return;
+                    }
+                    var playStateQuery = JSON.stringify({
+                        CmdType: QUERY_PLAY_STATE_CMD,
+                    });
+                    this.ws.send(playStateQuery);
+                },
+                startQueryPlayStateTimer(delayTime) {
+                    let self = this;
+                    setTimeout(() => {
+                        self.queryPlayState();
+                        self.startQueryPlayStateTimer(2000);
+                    }, delayTime);
+                },
+                refreshList() {
+                    if (!this.ws || !this.connected) {
+                        return;
+                    }
+                    this.loadingVisible = true;
+                    var refreshListCmd = JSON.stringify({
+                        CmdType: REFRESH_LIST_CMD,
+                    });
+                    this.ws.send(refreshListCmd);
+                },
+                pausePlay() {
+                    if (!this.ws || !this.connected) {
+                        return;
+                    }
+                    this.loadingVisible = true;
+                    var pausePlayCmd = JSON.stringify({
+                        CmdType: PAUSE_PLAY_CMD,
+                    });
+                    this.ws.send(pausePlayCmd);
+                },
+                resumePlay() {
+                    if (!this.ws || !this.connected) {
+                        return;
+                    }
+                    this.loadingVisible = true;
+                    var resumePlayCmd = JSON.stringify({
+                        CmdType: RESUME_PLAY_CMD,
+                    });
+                    this.ws.send(resumePlayCmd);
+                },
+                playVideo(videoItem) {
+                    if (!this.ws || !this.connected) {
+                        return;
+                    }
+                    this.loadingVisible = true;
+                    var playVideoCmd = JSON.stringify({
+                        CmdType: PLAY_VIDEO_CMD,
+                        VideoItem: videoItem,
+                    });
+                    this.ws.send(playVideoCmd);
+                },
+                playPrev() {
+                    if (!this.ws || !this.connected) {
+                        return;
+                    }
+                    let prevVideoItem = this.getPrevVideo();
+                    if (prevVideoItem) {
+                        this.playVideo(prevVideoItem);
+                    }
+                },
+                playNext() {
+                    if (!this.ws || !this.connected) {
+                        return;
+                    }
+                    let nextVideoItem = this.getNextVideo();
+                    if (nextVideoItem) {
+                        this.playVideo(nextVideoItem);
+                    }
+                },
+                getPrevVideo() {
+                    let currentIndex = this.getCurrentIndex();
+                    if (currentIndex == -1) {
+                        return null;
+                    }
+                    currentIndex -= 1;
+                    if (currentIndex < 0) {
+                        currentIndex = 0;
+                    }
+                    return this.playState.VideoItems[currentIndex];
+                },
+                getNextVideo() {
+                    let currentIndex = this.getCurrentIndex();
+                    if (currentIndex == -1) {
+                        return null;
+                    }
+                    currentIndex += 1;
+                    if (currentIndex >= this.playState.VideoItems.length) {
+                        currentIndex = this.playState.VideoItems.length - 1;
+                    }
+                    return this.playState.VideoItems[currentIndex];
+                },
+                getCurrentIndex() {
+                    if (!this.playState.CurrentVideo) {
+                        return -1;
+                    }
+                    for (let i = 0; i < this.playState.VideoItems.length; i++) {
+                        if (
+                            this.playState.VideoItems[i].Title ===
+                            this.playState.CurrentVideo.Title &&
+                            this.playState.VideoItems[i].RelPath ===
+                            this.playState.CurrentVideo.RelPath
+                        ) {
+                            return i;
+                        }
+                    }
+                    return -1;
+                },
+                connectWebSocket() {
+                    console.log("正在连接WebSocket...");
+                    try {
+                        this.ws = new WebSocket(`ws://${window.location.hostname}:1574/`);
 
-              let self = this;
+                        let self = this;
 
-              // 连接成功建立时触发
-              this.ws.onopen = function () {
-                self.errorMessage = '';
-                self.connected = true;
+                        // 连接成功建立时触发
+                        this.ws.onopen = function () {
+                            self.errorMessage = "";
+                            self.connected = true;
 
-                self.queryPlayState();
+                            self.queryPlayState();
 
-                console.log('WebSocket连接已打开。');
-              };
+                            console.log("WebSocket连接已打开。");
+                        };
 
-              // 接收到消息时触发
-              this.ws.onmessage = function (event) {
-                self.loadingVisible = false;
+                        // 接收到消息时触发
+                        this.ws.onmessage = function (event) {
+                            self.loadingVisible = false;
 
-                let response = JSON.parse(event.data);
-                // console.log('接收到服务端响应:', response);
+                            let response = JSON.parse(event.data);
+                            // console.log('接收到服务端响应:', response);
 
-                if (response.CmdType != QUERY_PLAY_STATE_CMD) {
-                  self.errorMessage = '';
-                }
+                            if (response.CmdType != QUERY_PLAY_STATE_CMD) {
+                                self.errorMessage = "";
+                            }
 
-                if (!response.Success) {
-                  self.errorMessage = response.Message;
-                } else {
-                  if (response.CmdType == QUERY_PLAY_STATE_CMD) {
-                    self.playState = response;
-                  }
-                }
-              };
+                            if (!response.Success) {
+                                self.errorMessage = response.Message;
+                            } else {
+                                if (response.CmdType == QUERY_PLAY_STATE_CMD) {
+                                    self.playState = response;
+                                }
+                            }
+                        };
 
-              // 发生错误时触发
-              this.ws.onerror = function (error) {
-                self.loadingVisible = false;
-                console.error('WebSocket发生错误:', error);
+                        // 发生错误时触发
+                        this.ws.onerror = function (error) {
+                            self.loadingVisible = false;
+                            console.error("WebSocket发生错误:", error);
 
-                // window.alert(`WebSocket发生错误: ${error}`);
-                self.errorMessage = `WebSocket发生错误: ${error}`;
-              };
+                            // window.alert(`WebSocket发生错误: ${error}`);
+                            self.errorMessage = `WebSocket发生错误: ${error}`;
+                        };
 
-              // 连接关闭时触发
-              this.ws.onclose = function () {
-                console.log('WebSocket连接已关闭。');
+                        // 连接关闭时触发
+                        this.ws.onclose = function () {
+                            console.log("WebSocket连接已关闭。");
 
-                self.ws = null;
-                self.connected = false;
-                self.errorMessage = '已与服务端断开连接';
+                            self.ws = null;
+                            self.connected = false;
+                            self.errorMessage = "已与服务端断开连接";
 
-                // 断线重连
-                setTimeout(function () {
-                  console.log('尝试重新连接WebSocket...');
-                  self.connectWebSocket();
-                }, self.reconnectInterval);
-              };
-            } catch (error) {
-              console.log(error);
-            }
-          },
-          updateMaxHeight() {
-            const playerDiv = document.querySelector('.player');
-            const playerDivHeight = playerDiv.offsetHeight;
+                            // 断线重连
+                            setTimeout(function () {
+                                console.log("尝试重新连接WebSocket...");
+                                self.connectWebSocket();
+                            }, self.reconnectInterval);
+                        };
+                    } catch (error) {
+                        console.log(error);
+                    }
+                },
+                updateMaxHeight() {
+                    const playerDiv = document.querySelector(".player");
+                    const playerDivHeight = playerDiv.offsetHeight;
 
-            const captionDiv = document.querySelector('.caption');
-            const captionDivHeight = captionDiv.offsetHeight;
+                    const captionDiv = document.querySelector(".caption");
+                    const captionDivHeight = captionDiv.offsetHeight;
 
-            const playlistDiv = document.querySelector('.playlist');
-            playlistDiv.style.maxHeight = window.innerHeight - playerDivHeight + captionDivHeight + 'px';
-          },
-        },
-        created() {
-          this.connectWebSocket();
-          this.startQueryPlayStateTimer();
-          this.updateMaxHeight();
-          window.addEventListener('resize', this.updateMaxHeight);
-        },
-      });
+                    const playlistDiv = document.querySelector(".playlist");
+                    playlistDiv.style.maxHeight =
+                        window.innerHeight - playerDivHeight + captionDivHeight + "px";
+                },
+            },
+            created() {
+                this.connectWebSocket();
+                this.startQueryPlayStateTimer();
+                this.updateMaxHeight();
+                window.addEventListener("resize", this.updateMaxHeight);
+            },
+        });
     </script>
-  </body>
+</body>
 </html>

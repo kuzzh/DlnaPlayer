@@ -18,5 +18,9 @@
         /// 播放指定视频
         /// </summary>
         PlayVideo = 3,
+        /// <summary>
+        /// 刷新列表
+        /// </summary>
+        RefreshList = 4
     }
 }

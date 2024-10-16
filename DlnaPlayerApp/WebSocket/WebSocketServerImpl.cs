@@ -65,6 +65,9 @@ namespace DlnaPlayerApp.WebSocket
                     case WebCmdType.PlayVideo:
                         HandlePlayVideoCmd(webCmd.VideoItem);
                         break;
+                    case WebCmdType.RefreshList:
+                        HandleRefreshListCmd();
+                        break;
                     default:
                         break;
                 }
@@ -162,6 +165,26 @@ namespace DlnaPlayerApp.WebSocket
                 }
             });
         }
+
+        private void HandleRefreshListCmd()
+        {
+            frmMain.MainForm.RefreshList();
+            var commonResponse = new CommonResponse
+            {
+                Success = true,
+                CmdType = WebCmdType.ResumePlay,
+                Message = ""
+            };
+            var json = commonResponse.ToJson();
+            SendAsync(json, completed =>
+            {
+                if (!completed)
+                {
+                    LogUtils.Error(logger, "向客户端发送刷新列表响应失败");
+                }
+            });
+        }
+
 
         protected override void OnError(WebSocketSharp.ErrorEventArgs e)
         {

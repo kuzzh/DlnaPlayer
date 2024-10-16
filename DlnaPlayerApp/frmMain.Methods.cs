@@ -62,7 +62,7 @@ namespace DlnaPlayerApp
                     var ext = $"*{Path.GetExtension(file)}";
                     if (SupporetdVideoFormats.Contains(ext))
                     {
-                        var name = Path.GetFileNameWithoutExtension(file);
+                        var name = Path.GetFileName(file);
                         var item = new ListViewItem(name)
                         {
                             ToolTipText = file,
