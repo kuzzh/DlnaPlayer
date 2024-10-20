@@ -1,5 +1,6 @@
 ﻿using DlnaPlayerApp.Utils;
 using System.Configuration;
+using System.Text.RegularExpressions;
 
 namespace DlnaPlayerApp.Config
 {
@@ -9,6 +10,17 @@ namespace DlnaPlayerApp.Config
         public int HttpPort { get; set; } = 1573;
         public int WebSocketPort { get; set; } = 1574;
         public int CallbackPort { get; set; } = 1575;
+        private string _skipTime = "00:00:00";
+        public string SkipTime {
+            get { return _skipTime; }
+            set
+            {
+                if (IsValidSkipTime(value))
+                {
+                    _skipTime = value;
+                }
+            }
+        }
 
         private static AppConfig _default;
         public static AppConfig Default
@@ -22,6 +34,29 @@ namespace DlnaPlayerApp.Config
                 }
                 return _default;
             }
+        }
+
+        public static bool IsValidSkipTime(string skipTime)
+        {
+            var pattern = "\\d{1,2}:\\d{1,2}:\\d{1,2}";
+            var regex = new Regex(pattern);
+            return regex.IsMatch(skipTime);
+        }
+
+        public static bool NeedSkip(string skipTime)
+        {
+            if (!IsValidSkipTime(skipTime))
+            {
+                return false;
+            }
+            foreach (var ch in skipTime)
+            {
+                if (ch != '0' && ch != ':')
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private void LoadConfig()
@@ -39,6 +74,7 @@ namespace DlnaPlayerApp.Config
             {
                 CallbackPort = callbackPort;
             }
+            SkipTime = ConfigurationManager.AppSettings[nameof(SkipTime)];
         }
 
         public void SaveConfig()
@@ -51,6 +87,7 @@ namespace DlnaPlayerApp.Config
             ModifyValue(config, nameof(HttpPort), HttpPort.ToString());
             ModifyValue(config, nameof(WebSocketPort), WebSocketPort.ToString());
             ModifyValue(config, nameof(CallbackPort), CallbackPort.ToString());
+            ModifyValue(config, nameof(SkipTime), SkipTime);
 
             // 保存配置更改
             config.Save(ConfigurationSaveMode.Modified);

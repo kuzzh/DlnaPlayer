@@ -7,6 +7,7 @@ using DlnaPlayerApp.Utils;
 using DlnaPlayerApp.WebSocket;
 using DlnaPlayerApp.WebSocket.Protocol;
 using log4net;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,6 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using WaitWnd;
 
@@ -61,6 +63,8 @@ namespace DlnaPlayerApp
 
             InitializeComponent();
 
+            MinimumSize = Size;
+
             InitLogAppender();
 
             SetListViewItemHeight(20);
@@ -68,6 +72,8 @@ namespace DlnaPlayerApp
             // 为了使lblCurrentMediaInfo文字过长时也显示并且在末尾添加省略号
             lblCurrentMediaInfo.Spring = true;
             statusStrip1.Renderer = new StatusStripRenderer();
+
+            tbSkipTime.Text = AppConfig.Default.SkipTime;
 
             if (MRUListConfig.Default.MRUPlayedList.Count > 0)
             {
@@ -435,6 +441,26 @@ namespace DlnaPlayerApp
         private void btnMRU_Click(object sender, EventArgs e)
         {
             MessageBox.Show(MRUListConfig.Default.ToString(), "最近播放");
+        }
+
+        private void tbSkipTime_TextChanged(object sender, EventArgs e)
+        {
+            var skipTime = tbSkipTime.Text;
+            if (AppConfig.IsValidSkipTime(skipTime))
+            {
+                AppConfig.Default.SkipTime = tbSkipTime.Text;
+                AppConfig.Default.SaveConfig();
+            }
+
+        }
+
+        private void btnSkipTime_Click(object sender, EventArgs e)
+        {
+            var skipTime = tbSkipTime.Text;
+            if (AppConfig.IsValidSkipTime(skipTime))
+            {
+                DlnaManager.Instance.Seek(skipTime, out string errorMsg);
+            }
         }
     }
 }

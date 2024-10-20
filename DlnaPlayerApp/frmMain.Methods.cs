@@ -201,6 +201,10 @@ namespace DlnaPlayerApp
             }
             else
             {
+                if (AppConfig.NeedSkip(AppConfig.Default.SkipTime))
+                {
+                    _seekPosition = AppConfig.Default.SkipTime;
+                }
                 BeginInvoke(new Action(() =>
                 {
                     playItem.Selected = true;
