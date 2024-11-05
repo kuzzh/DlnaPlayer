@@ -230,6 +230,16 @@ namespace DlnaPlayerApp
                 return;
             }
 
+            if (_currentPlayIndex >= 0 && lvPlaylist.Items.Count > 0)
+            {
+                var playingItem = lvPlaylist.Items[_currentPlayIndex];
+                var fileUrl = AppHelper.BuildMediaUrl(playingItem.Tag.ToString(), DlnaManager.Instance.CurrentDevice.BaseUrl);
+                if (e.CurrentDevice.CurrentTrackURI != fileUrl)
+                {
+                    return;
+                }
+            }
+
             if (!string.IsNullOrEmpty(_seekPosition))
             {
                 var ts = TimeSpan.Parse(_seekPosition);

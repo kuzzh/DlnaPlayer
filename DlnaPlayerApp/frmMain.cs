@@ -30,7 +30,7 @@ namespace DlnaPlayerApp
 
         private readonly List<string> SupporetdVideoFormats = new List<string>
         {
-            "*.mp4","*.avi","*.wmv","*.mkv"
+            "*.mp4","*.avi","*.wmv"
         };
         private int _currentPlayIndex = -1;
 
