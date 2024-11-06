@@ -204,6 +204,7 @@ namespace DlnaPlayerApp
                 if (AppConfig.NeedSkip(AppConfig.Default.SkipTime))
                 {
                     _seekPosition = AppConfig.Default.SkipTime;
+                    LogUtils.Info(logger, $"Seek Position={_seekPosition}");
                 }
                 BeginInvoke(new Action(() =>
                 {
@@ -234,6 +235,7 @@ namespace DlnaPlayerApp
             {
                 var playingItem = lvPlaylist.Items[_currentPlayIndex];
                 var fileUrl = AppHelper.BuildMediaUrl(playingItem.Tag.ToString(), DlnaManager.Instance.CurrentDevice.BaseUrl);
+
                 if (e.CurrentDevice.CurrentTrackURI != fileUrl)
                 {
                     return;
@@ -245,8 +247,9 @@ namespace DlnaPlayerApp
                 var ts = TimeSpan.Parse(_seekPosition);
                 if (e.PositionInfo.RelTimeSpan > new TimeSpan(0, 0, 0))
                 {
-                    if (e.PositionInfo.RelTimeSpan >= ts)
+                    if (e.PositionInfo.RelTimeSpan < new TimeSpan(0, 40, 0) && e.PositionInfo.RelTimeSpan >= ts)
                     {
+                        LogUtils.Info(logger, $"e.PositionInfo.RelTimeSpan={e.PositionInfo.RelTimeSpan} ts={ts}");
                         _seekPosition = null;
                         LogUtils.Info(logger, e.PositionInfo.RelTimeSpan.ToString());
                     }
