@@ -231,7 +231,7 @@ namespace DlnaPlayerApp
                 return;
             }
 
-            if (_currentPlayIndex >= 0 && lvPlaylist.Items.Count > 0)
+            if (_currentPlayIndex >= 0 && _currentPlayIndex < lvPlaylist.Items.Count && lvPlaylist.Items.Count > 0)
             {
                 var playingItem = lvPlaylist.Items[_currentPlayIndex];
                 var fileUrl = AppHelper.BuildMediaUrl(playingItem.Tag.ToString(), DlnaManager.Instance.CurrentDevice.BaseUrl);
