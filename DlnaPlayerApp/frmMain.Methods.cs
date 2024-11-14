@@ -145,7 +145,7 @@ namespace DlnaPlayerApp
             {
                 if (relPaths[i] == relPath)
                 {
-                    _currentPlayIndex = i - 1;
+                    _currentPlayIndex = Math.Max(i - 1, 0);
                     break;
                 }
             }
@@ -173,13 +173,14 @@ namespace DlnaPlayerApp
         {
             errorMsg = "";
 
+            _currentPlayIndex++;
+
             if (_currentPlayIndex >= lvPlaylist.Items.Count)
             {
+                _currentPlayIndex = -1;
                 errorMsg = "已播放到最后一集";
                 return false;
             }
-
-            _currentPlayIndex++;
 
             var playItem = InvokeRequired ? (ListViewItem)lvPlaylist.Invoke(new Func<ListViewItem>(() => lvPlaylist.Items[_currentPlayIndex])) : lvPlaylist.Items[_currentPlayIndex];
 
@@ -231,6 +232,22 @@ namespace DlnaPlayerApp
                 return;
             }
 
+            var listViewItem = FindListViewItem(e.PositionInfo.TrackURI);
+            if (listViewItem != null)
+            {
+                if (_prevPlayingListViewItem != listViewItem)
+                {
+                    if (_prevPlayingListViewItem != null)
+                    {
+                        _prevPlayingListViewItem.ForeColor = Color.Black;
+                    }
+                    listViewItem.ForeColor = Color.Red;
+                    _prevPlayingListViewItem = listViewItem;
+                }
+
+                _currentPlayIndex = lvPlaylist.Items.IndexOf(listViewItem);
+            }
+
             if (_currentPlayIndex >= 0 && _currentPlayIndex < lvPlaylist.Items.Count && lvPlaylist.Items.Count > 0)
             {
                 var playingItem = lvPlaylist.Items[_currentPlayIndex];
@@ -269,21 +286,6 @@ namespace DlnaPlayerApp
 
             OnPlayStateChanged(this, new PlayStateChangedEventArgs(e.TransportInfo.CurrentTransportState));
 
-            var listViewItem = FindListViewItem(e.PositionInfo.TrackURI);
-            if (listViewItem != null)
-            {
-                if (_prevPlayingListViewItem != listViewItem)
-                {
-                    if (_prevPlayingListViewItem != null)
-                    {
-                        _prevPlayingListViewItem.ForeColor = Color.Black;
-                    }
-                    listViewItem.ForeColor = Color.Red;
-                    _prevPlayingListViewItem = listViewItem;
-                }
-
-                _currentPlayIndex = lvPlaylist.Items.IndexOf(listViewItem);
-            }
             lblCurrentMediaInfo.Text = $"{Path.GetFileName(HttpUtility.UrlDecode(e.PositionInfo.TrackURI))} {e.PositionInfo.RelTime}/{e.PositionInfo.TrackDuration} {e.CurrentDevice.DeviceName}";
 
             var mi = new MediaPlayInfo
