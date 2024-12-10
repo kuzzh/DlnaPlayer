@@ -305,7 +305,7 @@ namespace DlnaPlayerApp
                     }
                     else
                     {
-                        if (MRUListConfig.Default.MRUPlayedList.Count > 10)
+                        if (MRUListConfig.Default.MRUPlayedList.Count > 50)
                         {
                             MRUListConfig.Default.MRUPlayedList.Remove(MRUListConfig.Default.MRUPlayedList.First());
                         }
