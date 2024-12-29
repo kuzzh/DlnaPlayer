@@ -38,6 +38,10 @@ namespace DlnaPlayerApp.Config
 
         public static bool IsValidSkipTime(string skipTime)
         {
+            if (string.IsNullOrEmpty(skipTime))
+            {
+                return false;
+            }
             var pattern = "\\d{1,2}:\\d{1,2}:\\d{1,2}";
             var regex = new Regex(pattern);
             return regex.IsMatch(skipTime);

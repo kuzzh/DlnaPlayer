@@ -219,6 +219,7 @@ namespace DlnaPlayerApp
         {
             using (var dlg = new FolderBrowserDialog())
             {
+                dlg.SelectedPath = tbMediaDir.Text;
                 if (dlg.ShowDialog() == DialogResult.OK)
                 {
                     var selectedDir = dlg.SelectedPath;
