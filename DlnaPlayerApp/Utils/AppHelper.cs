@@ -92,7 +92,7 @@ namespace DlnaPlayerApp.Utils
 
             var relFilePath = GetRelativePath(AppConfig.Default.MediaDir, filePath);
 
-            return $"{webBaseUrl}/{HttpUtility.UrlEncode(relFilePath)}";
+            return $"{webBaseUrl}/{Uri.EscapeDataString(relFilePath)}";
         }
 
         public static string GetRelativePath(string basePath, string targetPath)
