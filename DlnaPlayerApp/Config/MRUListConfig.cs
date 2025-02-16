@@ -32,6 +32,11 @@ namespace DlnaPlayerApp.Config
                         {
                             var json = File.ReadAllText(MRU_CONFIG_FILE);
                             _default = JsonConvert.DeserializeObject<MRUListConfig>(json);
+
+                            if (_default == null)
+                            {
+                                _default = new MRUListConfig();
+                            }
                         }
                         catch
                         {
