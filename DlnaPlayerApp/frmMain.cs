@@ -229,7 +229,7 @@ namespace DlnaPlayerApp
                     }
 
                     tbMediaDir.Text = selectedDir;
-                    LoadPlaylist(selectedDir, true);
+                    //LoadPlaylist(selectedDir, true);
                 }
             }
         }
@@ -461,6 +461,20 @@ namespace DlnaPlayerApp
             if (AppConfig.IsValidSkipTime(skipTime))
             {
                 DlnaManager.Instance.Seek(skipTime, out string errorMsg);
+            }
+        }
+
+        private void tbMediaDir_TextChanged(object sender, EventArgs e)
+        {
+            LoadPlaylist(tbMediaDir.Text.Trim(), true);
+        }
+
+        private void tbMediaDir_DoubleClick(object sender, EventArgs e)
+        {
+            // 打开当前目录
+            if (Directory.Exists(tbMediaDir.Text.Trim()))
+            {
+                Process.Start("explorer.exe", tbMediaDir.Text.Trim());
             }
         }
     }
